@@ -3,7 +3,7 @@
 ---
 
 ## #1 — Backend Foundation
-**Status:** Open
+**Status:** Closed
 
 Set up the backend server structure, models, routes, and controllers.
 
@@ -22,3 +22,17 @@ Set up the backend server structure, models, routes, and controllers.
 3. Projects
 4. Reports
 5. Comments
+
+---
+
+## #2 — Authentication
+**Status:** Open
+
+Implement register, login, and JWT middleware.
+
+### Scope
+- `src/routes/auth.js` — POST `/api/auth/register`, POST `/api/auth/login`
+- `src/controllers/auth.js` — register and login logic, bcrypt, JWT signing
+- `src/middleware/authenticate.js` — verify JWT from httpOnly cookie
+- `src/middleware/authorize.js` — role-based access check
+- Install and wire up `cookie-parser` in `server.js`
