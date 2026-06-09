@@ -1,0 +1,24 @@
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+}));
+app.use(express.json());
+
+// Routes — uncommented as each feature is built
+// app.use('/api/auth', require('./routes/auth'));
+// app.use('/api/orgs', require('./routes/orgs'));
+// app.use('/api/projects', require('./routes/projects'));
+// app.use('/api/reports', require('./routes/reports'));
+// app.use('/api/comments', require('./routes/comments'));
+
+app.listen(PORT, ()=>{
+    console.log(`Server running on port: ${PORT}`);
+})

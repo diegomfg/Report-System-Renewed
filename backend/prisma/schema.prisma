@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  superuser
+  admin
+  member
+}
+
+enum Severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum Status {
+  open
+  in_progress
+  resolved
+}
+
+model Organization {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  users    User[]
+  projects Project[]
+  reports  Report[]
+}
+
+model Project {
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  members      UserProject[]
+  reports      Report[]
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  passwordHash   String
+  role           Role      @default(member)
+  organizationId String?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization     Organization?    @relation(fields: [organizationId], references: [id])
+  projects         UserProject[]
+  createdReports   Report[]
+  assignedReports  ReportAssignee[]
+  reviewingReports ReportReviewer[]
+  comments         Comment[]
+}
+
+model UserProject {
+  userId     String
+  projectId  String
+  assignedAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@id([userId, projectId])
+}
+
+model Report {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  severity       Severity
+  status         Status    @default(open)
+  createdById    String
+  projectId      String
+  organizationId String
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  createdBy    User             @relation(fields: [createdById], references: [id])
+  project      Project          @relation(fields: [projectId], references: [id])
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  assignees    ReportAssignee[]
+  reviewers    ReportReviewer[]
+  comments     Comment[]
+}
+
+model ReportAssignee {
+  reportId String
+  userId   String
+
+  report Report @relation(fields: [reportId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([reportId, userId])
+}
+
+model ReportReviewer {
+  reportId String
+  userId   String
+
+  report Report @relation(fields: [reportId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([reportId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  reportId  String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  report Report @relation(fields: [reportId], references: [id])
+  author User   @relation(fields: [authorId], references: [id])
+}
