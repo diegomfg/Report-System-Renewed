@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm --version)",
+      "Bash(psql --version)",
+      "Bash(sudo apt update)",
+      "Bash(sudo apt install -y postgresql postgresql-contrib)"
     ]
   }
 }
