@@ -22,10 +22,10 @@ exports.register = async (req, res) => {
             data: { name, email, passwordHash },
         });
 
-        const token = jwt.sign({id: user.id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({id: user.id, email: user.email}, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.cookie('token', token, COOKIE_OPTIONS);
-        res.status(201).json({id: user.id, name: user.name, email: user.email, role: user.role});
+        res.status(201).json({id: user.id, name: user.name, email: user.email});
     } catch (error) {
         res.status(500).json({error: 'Registration Failed. Server Error.', error: error.message});
     }
@@ -41,10 +41,10 @@ exports.login = async (req, res) => {
             const match = await bcrypt.compare(password, user.passwordHash);
             if(!match) return res.status(401).json({error: 'Invalid Credentials'});
 
-            const token = jwt.sign({id: user.id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '7d' });
+            const token = jwt.sign({id: user.id, email: user.email}, process.env.JWT_SECRET, { expiresIn: '7d' });
 
             res.cookie('token', token, COOKIE_OPTIONS);
-            res.json({id: user.id, name: user.name, email: user.email, role: user.role});
+            res.json({id: user.id, name: user.name, email: user.email});
         } catch (error) {
             res.status(500).json({error: 'Login Failed. Server Error.'});
         }

@@ -1,6 +1,6 @@
 # Report System — Project Design Document
 
-> Method: Feature → Reasoning → Code → Write → Feedback loop
+> Method: Feature → Reasoning → Code → Write → Feedback loop. At the start of every session, read this file, understand the structure, hierarchy and business rules. Then, we continue working on the current issues/tasks. Before implementing any features, a planning session is required, this is to filter out poor planning, ideas or decisions that could change as the project develops. First, always, planning, then, confirmation, then implementation. Process: Feature -> Reasoning (back and forth) -> Code (Written by user or LLM) -> Review
 
 ---
 

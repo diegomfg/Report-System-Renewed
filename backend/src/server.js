@@ -16,10 +16,14 @@ app.use(express.json());
 app.use(cookieParser());
 // Routes — uncommented as each feature is built
 app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/orgs', require('./routes/orgs'));
+app.use('/api/orgs', require('./routes/orgs'));
 // app.use('/api/projects', require('./routes/projects'));
 // app.use('/api/reports', require('./routes/reports'));
 // app.use('/api/comments', require('./routes/comments'));
+
+app.get("/", (req, res) => {
+    res.write("<h1>Hello <code>/</code><h1>");
+})
 
 app.listen(PORT, ()=>{
     console.log(`Server running on port: ${PORT}`);

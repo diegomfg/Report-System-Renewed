@@ -34,7 +34,7 @@ model Organization {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  users    User[]
+  members  OrganizationMember[]
   projects Project[]
   reports  Report[]
 }
@@ -54,22 +54,32 @@ model Project {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  passwordHash   String
-  role           Role      @default(member)
-  organizationId String?
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  organization     Organization?    @relation(fields: [organizationId], references: [id])
-  projects         UserProject[]
-  createdReports   Report[]
-  assignedReports  ReportAssignee[]
-  reviewingReports ReportReviewer[]
-  comments         Comment[]
+  organizationMemberships OrganizationMember[]
+  projects                UserProject[]
+  createdReports          Report[]
+  assignedReports         ReportAssignee[]
+  reviewingReports        ReportReviewer[]
+  comments                Comment[]
+}
+
+model OrganizationMember {
+  userId         String
+  organizationId String
+  role           Role      @default(member)
+  joinedAt       DateTime  @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([userId, organizationId])
 }
 
 model UserProject {
