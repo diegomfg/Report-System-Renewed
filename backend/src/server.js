@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,9 +13,9 @@ app.use(cors({
     credentials: true,
 }));
 app.use(express.json());
-
+app.use(cookieParser());
 // Routes — uncommented as each feature is built
-// app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', require('./routes/auth'));
 // app.use('/api/orgs', require('./routes/orgs'));
 // app.use('/api/projects', require('./routes/projects'));
 // app.use('/api/reports', require('./routes/reports'));
