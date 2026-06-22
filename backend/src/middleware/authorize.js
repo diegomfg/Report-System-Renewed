@@ -1,11 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Checks that the authenticated user has one of the allowed roles in the org
-// identified by req.params.id. Attaches req.membership on success.
-module.exports = (roles) => async (req, res, next) => {
+// Checks that the authenticated user has one of the allowed roles in the org.
+// paramName defaults to 'id' (org routes use :id); pass 'orgId' for project routes.
+// Attaches req.membership on success.
+module.exports = (roles, paramName = 'id') => async (req, res, next) => {
     try {
-        const organizationId = req.params.id;
+        const organizationId = req.params[paramName];
         const userId = req.user.id;
 
         const membership = await prisma.organizationMember.findUnique({

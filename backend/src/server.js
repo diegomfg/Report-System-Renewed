@@ -17,7 +17,7 @@ app.use(cookieParser());
 // Routes — uncommented as each feature is built
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/orgs', require('./routes/orgs'));
-// app.use('/api/projects', require('./routes/projects'));
+app.use('/api/orgs/:orgId/projects', require('./routes/projects'));
 // app.use('/api/reports', require('./routes/reports'));
 // app.use('/api/comments', require('./routes/comments'));
 

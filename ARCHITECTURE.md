@@ -52,7 +52,7 @@ Runs after `authenticate`. Reads the org ID from `req.params.id`, queries `Organ
 Request → authenticate → authorize(\\\['admin']) → req.membership = { role, ... } → controller
 ```
 
-This middleware is only used on routes where the org ID is in `req.params.id`. Project and report routes will handle their own authorization once built, since they resolve org context via a different path (project → org lookup).
+For org routes the org ID lives at `req.params.id` — `authorize(['admin'])` uses the default. For project routes the org ID lives at `req.params.orgId` — pass it explicitly: `authorize(['admin'], 'orgId')`.
 
 **Why not put the role in the JWT?**  
 Because a user's role can change (member promoted to admin, or removed from an org) without a new login. Baking it into the token means the app would trust stale data until the token expires. Looking it up per-request keeps authorization accurate.
@@ -76,8 +76,10 @@ All org members can **see** every project in their org. To **post reports**, a `
 
 Two paths:
 
-1. **Admin directly adds a user** — no request needed, admin just creates the `UserProject` record.
-2. **Member requests access** — creates a `ProjectAccessRequest` with `status: pending`. Admin approves, which creates the `UserProject` record.
+1. **Admin directly adds a user** — `POST /api/orgs/:orgId/projects/:projectId/members` — creates `UserProject` immediately. Also auto-resolves any pending `ProjectAccessRequest` from that user.
+2. **Member requests access** — `POST /api/orgs/:orgId/projects/:projectId/request` — creates a `ProjectAccessRequest` with `status: pending`. Admin approves or rejects via `PATCH /api/orgs/:orgId/projects/:projectId/requests/:requestId`.
+
+The project list (`GET /api/orgs/:orgId/projects`) includes a `yourStatus` field per project — `"in_project"`, `"pending"`, or `null` — so the frontend can render access badges without a separate request. The project detail endpoint (`GET /api/orgs/:orgId/projects/:projectId`) returns all org members enriched with a `projectStatus` field using the same values.
 
 \---
 
@@ -125,7 +127,7 @@ HTTP Request
 |-|-|
 |Auth|Done|
 |Organizations + membership flows|Done|
-|Projects|Next|
+|Projects|Done|
 |Reports|Pending|
 |Comments|Pending|
 |Frontend (React)|Pending|
