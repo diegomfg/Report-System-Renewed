@@ -8,9 +8,14 @@ datasource db {
 }
 
 enum Role {
-  superuser
   admin
   member
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
 }
 
 enum Severity {
@@ -34,9 +39,10 @@ model Organization {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  members  OrganizationMember[]
-  projects Project[]
-  reports  Report[]
+  members      OrganizationMember[]
+  joinRequests OrgJoinRequest[]
+  projects     Project[]
+  reports      Report[]
 }
 
 model Project {
@@ -49,8 +55,9 @@ model Project {
   updatedAt      DateTime  @updatedAt
 
   organization Organization  @relation(fields: [organizationId], references: [id])
-  members      UserProject[]
-  reports      Report[]
+  members        UserProject[]
+  accessRequests ProjectAccessRequest[]
+  reports        Report[]
 }
 
 model User {
@@ -63,7 +70,9 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   organizationMemberships OrganizationMember[]
+  orgJoinRequests         OrgJoinRequest[]
   projects                UserProject[]
+  projectAccessRequests   ProjectAccessRequest[]
   createdReports          Report[]
   assignedReports         ReportAssignee[]
   reviewingReports        ReportReviewer[]
@@ -132,6 +141,34 @@ model ReportReviewer {
   user   User   @relation(fields: [userId], references: [id])
 
   @@id([reportId, userId])
+}
+
+model OrgJoinRequest {
+  id             String        @id @default(cuid())
+  userId         String
+  organizationId String
+  status         RequestStatus @default(pending)
+  requestedAt    DateTime      @default(now())
+  resolvedAt     DateTime?
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model ProjectAccessRequest {
+  id          String        @id @default(cuid())
+  userId      String
+  projectId   String
+  status      RequestStatus @default(pending)
+  requestedAt DateTime      @default(now())
+  resolvedAt  DateTime?
+
+  user    User    @relation(fields: [userId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
 }
 
 model Comment {

@@ -208,6 +208,8 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 4. **Write** — developer types it out manually in their editor
 5. **Feedback** — questions, changes, things that felt wrong → iterate
 
+After each feature is complete, update `ARCHITECTURE.md` to reflect any new patterns, flows, or layers introduced. Keep the "What's not built yet" table current.
+
 ---
 
 *Last updated: June 2026*

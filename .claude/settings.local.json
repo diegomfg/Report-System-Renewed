@@ -5,7 +5,9 @@
       "Bash(npm --version)",
       "Bash(psql --version)",
       "Bash(sudo apt update)",
-      "Bash(sudo apt install -y postgresql postgresql-contrib)"
+      "Bash(sudo apt install -y postgresql postgresql-contrib)",
+      "Bash(git *)",
+      "Bash(npx prisma *)"
     ]
   }
 }
