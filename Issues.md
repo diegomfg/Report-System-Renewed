@@ -40,7 +40,7 @@ Implement register, login, and JWT middleware.
 ---
 
 ## #3 — Schema Redesign: Many-to-Many User-Organization Relationship
-**Status:** Open
+**Status:** Closed
 
 Redesign the schema to allow users to belong to multiple organizations and have role-per-org instead of global role.
 
@@ -92,8 +92,50 @@ model OrganizationMember {
 
 ---
 
-## #4 — Frontend: Dashboard UI
-**Status:** Open (Future)
+## #5 — Reports
+**Status:** Closed
+
+Full CRUD for reports scoped under `/api/orgs/:orgId/projects/:projectId/reports`.
+
+### Scope
+- `src/routes/reports.js` — 9 routes mounted under the project path
+- `src/controllers/reports.js` — create, list, get, update, soft delete, manage assignees/reviewers
+
+### Authorization model
+- **Create / Update** — project members only (`UserProject` record required)
+- **Read (list + detail)** — any org member
+- **Delete** — admin or report creator only (soft delete)
+- **Manage assignees** — admin or creator; target user must be a project member
+- **Manage reviewers** — admin or creator; target user must be an org member
+
+### Filtering
+`GET .../reports?severity=high&status=open` — both params optional, invalid values silently ignored
+
+---
+
+## #6 — Comments
+**Status:** Open
+
+Threaded comments on reports.
+
+### Scope
+- `src/routes/comments.js`
+- `src/controllers/comments.js`
+- Mount in `server.js`
+
+### Routes
+- `POST /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments` — add comment (project member)
+- `GET /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments` — list comments (org member)
+- `DELETE /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments/:commentId` — delete comment (author or admin)
+
+### Notes
+- No edit on comments — delete and re-post is the pattern (keeps it simple)
+- Comments are already included in `GET .../reports/:reportId` via the `getReport` controller, so the list endpoint is mainly for paginated/standalone use if needed later
+
+---
+
+## #4 — Frontend: React SPA
+**Status:** Open (Next after Comments)
 
 Build a frontend dashboard for navigating organizations and projects.
 

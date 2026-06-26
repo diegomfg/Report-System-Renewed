@@ -83,6 +83,36 @@ The project list (`GET /api/orgs/:orgId/projects`) includes a `yourStatus` field
 
 \---
 
+## Reports
+
+Reports are scoped under a project: `/api/orgs/:orgId/projects/:projectId/reports`.
+
+**Authorization tiers:**
+
+| Action | Who |
+|--------|-----|
+| Create | Project member (`UserProject` record required) |
+| List / Get | Any org member |
+| Update (any field) | Project member |
+| Delete (soft) | Admin or report creator |
+| Add / remove assignee | Admin or creator — assignee must be a project member |
+| Add / remove reviewer | Admin or creator — reviewer must be an org member |
+
+Admin and creator checks use `req.membership.role === 'admin'` (set by `authorize` middleware) and `report.createdById === req.user.id` respectively — no extra DB query needed for either check.
+
+**Assignees vs Reviewers:**
+- `ReportAssignee` — responsible for resolving the issue. Must hold a `UserProject` record.
+- `ReportReviewer` — invited for visibility/feedback only. Org membership is enough; no project access required.
+
+**Filtering:**
+`GET .../reports` accepts optional `?severity=` and `?status=` query params. Invalid enum values are silently ignored so the request always returns rather than erroring on a bad filter.
+
+**List vs Detail responses:**
+- List — includes `createdBy { id, name }` and `_count { assignees, reviewers, comments }`
+- Detail — includes full `createdBy`, full `assignees[]`, `reviewers[]`, and `comments[]` (ordered oldest-first)
+
+\---
+
 ## Soft Deletes
 
 Organizations, Projects, and Reports have a `deletedAt` field. Deletion sets this timestamp rather than removing the row.
@@ -128,7 +158,7 @@ HTTP Request
 |Auth|Done|
 |Organizations + membership flows|Done|
 |Projects|Done|
-|Reports|Pending|
+|Reports|Done|
 |Comments|Pending|
 |Frontend (React)|Pending|
 |Email invitations|Deferred|
