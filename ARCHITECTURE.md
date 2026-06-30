@@ -113,11 +113,45 @@ Admin and creator checks use `req.membership.role === 'admin'` (set by `authoriz
 
 \---
 
+## Comments
+
+Comments are scoped under a report: `/api/orgs/:orgId/projects/:projectId/reports/:reportId/comments`.
+
+**Threading:** 1-level only. A comment may have a `parentId` pointing to another comment in the same report. Replies cannot themselves have a `parentId` — this is enforced at the API layer, not the DB level.
+
+**Authorization tiers:**
+
+| Action | Who |
+|--------|-----|
+| List | Any org member |
+| Create | Admin, report creator, report assignees, report reviewers |
+| Edit (PATCH) | Comment author only |
+| Delete (tombstone) | Comment author or admin |
+
+The `canComment` helper in the controller runs a single Prisma query that checks `createdById`, `assignees`, and `reviewers` in one shot. Admin is short-circuited before the query using `req.membership.role`.
+
+**Tombstone deletes:** Comments are never hard-deleted. `deletedAt` is set instead. The `sanitize()` helper in the controller transforms tombstoned nodes before sending the response — `body` becomes `"[deleted]"` and `author` is set to `null`. The node stays in the tree so replies remain visible.
+
+Replying to a tombstoned parent is blocked at the API layer. Editing a tombstoned comment is also blocked.
+
+**List response shape:**
+```
+[
+  { id, body, author, parentId: null, replies: [{ id, body, author, parentId, ... }] },
+  ...
+]
+```
+Top-level comments ordered oldest-first; replies within each comment also oldest-first.
+
+\---
+
 ## Soft Deletes
 
-Organizations, Projects, and Reports have a `deletedAt` field. Deletion sets this timestamp rather than removing the row.
+Organizations, Projects, Reports, and Comments have a `deletedAt` field. Deletion sets this timestamp rather than removing the row.
 
 All standard queries filter `WHERE deletedAt IS NULL`. This means soft-deleted records are invisible to normal users but recoverable. When superuser functionality is added, it will query without this filter.
+
+Comments use a slightly different flavor called **tombstoning** — the row stays fully visible in thread queries but its content is sanitized in the response (`body: "[deleted]"`, `author: null`). This preserves thread structure even when a parent is deleted.
 
 No cascading hard deletes — if you delete an org, its projects and reports are not removed, just unreachable through normal queries.
 
@@ -153,18 +187,18 @@ HTTP Request
 
 ## What's not built yet
 
-|Layer|Status|
-|-|-|
-|Auth|Done|
-|Organizations + membership flows|Done|
-|Projects|Done|
-|Reports|Done|
-|Comments|Pending|
-|Frontend (React)|Pending|
-|Email invitations|Deferred|
-|Superuser|Deferred|
+| Layer | Status |
+|-------|--------|
+| Auth | ✅ Done |
+| Organizations + membership flows | ✅ Done |
+| Projects | ✅ Done |
+| Reports | ✅ Done |
+| Comments | ✅ Done |
+| Frontend (React) | ⬅ Next |
+| Email invitations | Deferred |
+| Superuser | Deferred |
 
 \---
 
-*Last updated: June 2026*
+*Last updated: June 2026 — backend complete, frontend next*
 

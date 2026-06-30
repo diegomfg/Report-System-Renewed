@@ -150,10 +150,14 @@ id
 body
 reportId        -- FK → Report
 authorId        -- FK → User
+parentId        -- FK → Comment (nullable, self-referential — replies only, max 1 level deep)
+deletedAt       -- tombstone: body replaced with "[deleted]", author stripped, node kept for reply visibility
 createdAt
 updatedAt
 ```
-> Comments are threaded and timestamped. Separate table (not embedded) since this is SQL.
+> Comments are threaded (1-level replies only) and tombstone-deleted. Separate table (not embedded) since this is SQL.
+> Who can comment: org admin, report creator, report assignees, report reviewers.
+> Who can edit: author only. Who can delete (tombstone): author or admin.
 
 ---
 
@@ -189,14 +193,22 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 
 ## Build Order
 
-| # | Feature                         | Notes                                      |
-|---|---------------------------------|--------------------------------------------|
-| 1 | Auth                            | Register, Login, JWT middleware            |
-| 2 | Organizations                   | Create org (auto-assigns Admin), join org  |
-| 3 | Projects                        | Create project, assign members (Admin)     |
-| 4 | Reports                         | Full CRUD, assignees, reviewers            |
-| 5 | Comments                        | Add / delete threaded comments on Reports  |
-| 6 | React Frontend                  | UI layer consuming the finished API        |
+| # | Feature                         | Status | Notes                                      |
+|---|---------------------------------|--------|--------------------------------------------|
+| 1 | Auth                            | ✅ done | Register, Login, JWT middleware            |
+| 2 | Organizations                   | ✅ done | Create org (auto-assigns Admin), join org  |
+| 3 | Projects                        | ✅ done | Create project, assign members (Admin)     |
+| 4 | Reports                         | ✅ done | Full CRUD, assignees, reviewers            |
+| 5 | Comments                        | ✅ done | Threaded (1-level), edit, tombstone delete |
+| 6 | React Frontend                  | ⬅ next | UI layer consuming the finished API        |
+
+### Frontend — Foundation (do these first, in order)
+1. **Scaffold** — `npm create vite@latest frontend -- --template react` from the project root
+2. **Axios instance** — `src/api/axios.js`, base URL + `withCredentials: true` for cookie auth
+3. **Auth context** — `src/context/AuthContext.jsx`, holds current user + `login()` / `logout()`
+4. **Routing skeleton** — React Router v6, public routes (`/login`, `/register`) + a `<ProtectedRoute>` wrapper
+
+> **Before starting any frontend feature:** run `sudo apt update` first.
 
 ---
 
@@ -212,4 +224,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: June 2026*
+*Last updated: June 2026 — backend complete, frontend next*

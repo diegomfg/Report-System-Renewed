@@ -114,42 +114,58 @@ Full CRUD for reports scoped under `/api/orgs/:orgId/projects/:projectId/reports
 ---
 
 ## #6 — Comments
-**Status:** Open
+**Status:** Closed
 
-Threaded comments on reports.
+Threaded comments on reports with editing and tombstone deletes.
 
 ### Scope
 - `src/routes/comments.js`
 - `src/controllers/comments.js`
-- Mount in `server.js`
+- Mounted in `server.js` at `/api/orgs/:orgId/projects/:projectId/reports/:reportId/comments`
+- Prisma migration: `add_comment_threading` — added `parentId` (nullable self-FK) and `deletedAt` to `Comment`
 
 ### Routes
-- `POST /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments` — add comment (project member)
-- `GET /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments` — list comments (org member)
-- `DELETE /api/orgs/:orgId/projects/:projectId/reports/:reportId/comments/:commentId` — delete comment (author or admin)
+- `GET    .../comments` — list comments (any org member); returns top-level comments with replies nested
+- `POST   .../comments` — create comment (admin, report creator, assignees, reviewers); body: `{ body, parentId? }`
+- `PATCH  .../comments/:commentId` — edit comment body (author only)
+- `DELETE .../comments/:commentId` — tombstone (author or admin)
 
-### Notes
-- No edit on comments — delete and re-post is the pattern (keeps it simple)
-- Comments are already included in `GET .../reports/:reportId` via the `getReport` controller, so the list endpoint is mainly for paginated/standalone use if needed later
+### Design decisions
+- **1-level threading** — `parentId` self-FK on Comment; replies cannot themselves have a `parentId` (enforced at API layer)
+- **Tombstone deletes** — `deletedAt` set instead of hard delete; response sanitizes to `body: "[deleted]"`, `author: null`; node stays in tree so replies remain visible; replying to or editing a tombstoned comment is blocked
+- **Edit added** — PATCH route allows authors to edit their own comments; `updatedAt` signals "edited" to the frontend
+- **`canComment` helper** — single Prisma query checks creator, assignees, reviewers in one shot; admin short-circuits before the query
+
+### Known limitation
+- `getReport` still returns `comments[]` as a flat array (no nested replies). Should be updated or removed when frontend is built.
 
 ---
 
 ## #4 — Frontend: React SPA
-**Status:** Open (Next after Comments)
+**Status:** Open (Next)
 
-Build a frontend dashboard for navigating organizations and projects.
+Build a React SPA consuming the finished API.
+
+### Pre-flight
+- Run `sudo apt update` before starting any frontend feature work.
+
+### Foundation (must be done first, in order)
+1. **Scaffold** — `npm create vite@latest frontend -- --template react` from project root
+2. **Axios instance** — `src/api/axios.js`, base URL + `withCredentials: true` for cookie auth
+3. **Auth context** — `src/context/AuthContext.jsx`, holds current user + `login()` / `logout()`
+4. **Routing skeleton** — React Router v6, public routes (`/login`, `/register`) + `<ProtectedRoute>` wrapper
 
 ### Requirements
+- **Auth pages** — Register and Login
 - **Top-level dashboard** — Shows all organizations the user belongs to
 - **Organization page** — Clicking an org shows its projects
-- **Context switching** — User can switch between orgs to work in different contexts
+- **Project page** — Shows reports; project members can create reports
+- **Report detail** — Full report with assignees, reviewers, and threaded comments
+- **Context switching** — User can switch between orgs
 - **Leave actions** — UI for leaving projects and orgs
 
 ### Tech Stack (per CLAUDE.md)
-- React 18.x
+- React 18.x + Vite
 - React Router v6 for navigation
-- Axios for API calls with JWT interceptor
-
-### Deferred Until
-- Backend org/project CRUD is complete and tested
-- Schema redesign (#3) is implemented
+- Axios for API calls with `withCredentials: true` for cookie auth
+- React Context for auth state (no Redux)
