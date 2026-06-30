@@ -185,7 +185,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 
 ## Auth Strategy
 
-- **JWT** — issued on login, stored client-side (httpOnly cookie or Authorization header TBD)
+- **JWT** — issued on login, stored as an `httpOnly` cookie named `token`
 - **Middleware** — `authenticate` (valid token) and `authorize(roles[])` (role check) applied per route
 - Passwords hashed with **bcrypt**
 
@@ -193,22 +193,31 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 
 ## Build Order
 
-| # | Feature                         | Status | Notes                                      |
-|---|---------------------------------|--------|--------------------------------------------|
-| 1 | Auth                            | ✅ done | Register, Login, JWT middleware            |
-| 2 | Organizations                   | ✅ done | Create org (auto-assigns Admin), join org  |
-| 3 | Projects                        | ✅ done | Create project, assign members (Admin)     |
-| 4 | Reports                         | ✅ done | Full CRUD, assignees, reviewers            |
-| 5 | Comments                        | ✅ done | Threaded (1-level), edit, tombstone delete |
-| 6 | React Frontend                  | ⬅ next | UI layer consuming the finished API        |
+| # | Feature                         | Status      | Notes                                                    |
+|---|---------------------------------|-------------|----------------------------------------------------------|
+| 1 | Auth                            | ✅ done      | Register, Login, JWT middleware                          |
+| 2 | Organizations                   | ✅ done      | Create org (auto-assigns Admin), join org                |
+| 3 | Projects                        | ✅ done      | Create project, assign members (Admin)                   |
+| 4 | Reports                         | ✅ done      | Full CRUD, assignees, reviewers                          |
+| 5 | Comments                        | ✅ done      | Threaded (1-level), edit, tombstone delete               |
+| 6 | React Frontend                  | 🔄 in progress | Foundation + auth pages + app shell + dashboard done  |
 
-### Frontend — Foundation (do these first, in order)
-1. **Scaffold** — `npm create vite@latest frontend -- --template react` from the project root
-2. **Axios instance** — `src/api/axios.js`, base URL + `withCredentials: true` for cookie auth
-3. **Auth context** — `src/context/AuthContext.jsx`, holds current user + `login()` / `logout()`
-4. **Routing skeleton** — React Router v6, public routes (`/login`, `/register`) + a `<ProtectedRoute>` wrapper
+### Frontend — Progress
 
-> **Before starting any frontend feature:** run `sudo apt update` first.
+| Layer | Status | Notes |
+|-------|--------|-------|
+| Scaffold (Vite + React) | ✅ done | `frontend/` at project root |
+| Axios instance | ✅ done | `src/api/axios.js`, `withCredentials: true` |
+| Auth context | ✅ done | `src/context/AuthContext.jsx` — holds user, `login`, `logout`, `refreshUser` |
+| Routing skeleton | ✅ done | React Router v6, `<ProtectedRoute>`, nested routes via `<Outlet>` |
+| Register page | ✅ done | Form → `POST /auth/register` → auto-login → redirect |
+| Login page | ✅ done | Form → `POST /auth/login` → redirect |
+| App shell | ✅ done | `AppLayout` with sidebar (org name, nav, user/logout) |
+| Onboarding | ✅ done | Inline: create org form + browse orgs + request to join |
+| Dashboard | ✅ done | Project cards grid with member/report counts and access badges |
+| Project detail page | ⬅ next | Click card → view reports |
+| Reports (create/view) | ⬅ next | Within a project |
+| Admin flows | ⬅ next | Create project, manage members |
 
 ---
 
@@ -224,4 +233,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: June 2026 — backend complete, frontend next*
+*Last updated: June 2026 — backend complete, frontend foundation + auth + shell + dashboard done*

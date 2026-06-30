@@ -160,11 +160,79 @@ No cascading hard deletes — if you delete an org, its projects and reports are
 ## API Conventions
 
 * All routes live under `/api/`
-* Auth routes: `/api/auth/register`, `/api/auth/login`
+* Auth routes: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, `/api/auth/logout`
 * Resource routes follow REST: `/api/orgs`, `/api/orgs/:id`, etc.
 * Nested actions use descriptive segments: `/api/orgs/:id/request`, `/api/orgs/:id/requests/:requestId`
 * Responses always return a top-level key matching the resource: `{ organization }`, `{ organizations }`, `{ requests }`, etc.
 * Errors return `{ error: "message" }`
+
+\---
+
+## Frontend
+
+The frontend lives in `frontend/` at the project root. It's a Vite + React app (no TypeScript, no Redux).
+
+### Stack
+
+| Tool | Purpose |
+|------|---------|
+| Vite + React 18 | Scaffold and dev server |
+| React Router v6 | Client-side routing with nested routes |
+| Axios | HTTP client — `withCredentials: true` sends the cookie on every request |
+
+### File structure
+
+```
+frontend/src/
+  api/
+    axios.js           — preconfigured Axios instance (baseURL + credentials)
+  context/
+    AuthContext.jsx    — user state, login/logout/refreshUser, session restore
+  layouts/
+    AppLayout.jsx      — sidebar shell + <Outlet>; shows OnboardingPage if no org
+  pages/
+    LoginPage.jsx
+    RegisterPage.jsx
+    OnboardingPage.jsx — create org or browse+join; shown when user has no org
+    DashboardPage.jsx  — project cards grid
+  App.jsx              — route tree
+  main.jsx             — BrowserRouter + AuthProvider wrapping App
+  index.css            — design tokens + all shared styles
+```
+
+### Auth flow
+
+1. On load, `AuthContext` calls `GET /api/auth/me`. If the httpOnly cookie is present and valid, the server returns `{ id, name, email, role, organizationId }` and the user is restored into context. If not, `user` is `null`.
+2. `login(userData)` — called after register/login API responses; sets user in state directly (no extra round-trip since the response already returns the user).
+3. `logout()` — calls `POST /api/auth/logout` (clears the cookie server-side), then sets `user` to `null`.
+4. `refreshUser()` — re-calls `GET /api/auth/me` and updates context. Used after creating an org so the new `organizationId` is reflected without forcing a full page reload.
+
+`role` and `organizationId` on the user object come from `OrganizationMember`, not from the `User` table directly. `GET /api/auth/me` joins through that table before responding.
+
+### Route structure
+
+```
+/login          → LoginPage          (public)
+/register       → RegisterPage       (public)
+/               → ProtectedRoute
+                    └── AppLayout
+                          ├── (no org) → OnboardingPage (inline, no sidebar)
+                          └── (has org) → Sidebar + <Outlet>
+                                └── index → DashboardPage
+```
+
+`ProtectedRoute` redirects unauthenticated users to `/login`. `AppLayout` gates on `user.organizationId` — users with no org see the onboarding panel instead of the sidebar.
+
+### Onboarding
+
+Shown inline when `user.organizationId === null`. Two panels side by side:
+
+- **Create org** — `POST /api/orgs` → on success, `refreshUser()` pulls the new `organizationId` into context → `AppLayout` re-renders into the full shell automatically.
+- **Browse orgs** — `GET /api/orgs/browse` → list with "Request to join" buttons → `POST /api/orgs/:id/request` → button becomes "Requested" (optimistic UI).
+
+### Dashboard
+
+Calls `GET /api/orgs/:orgId/projects` using `user.organizationId` from context. Renders a responsive card grid. Each card shows: name, description, member count, report count, and a `yourStatus` badge (`Member` / `Pending`) from the API's per-project access field.
 
 \---
 
@@ -194,11 +262,14 @@ HTTP Request
 | Projects | ✅ Done |
 | Reports | ✅ Done |
 | Comments | ✅ Done |
-| Frontend (React) | ⬅ Next |
+| Frontend — foundation, auth pages, shell, dashboard | ✅ Done |
+| Frontend — project detail page | ⬅ Next |
+| Frontend — reports (create/view within a project) | ⬅ Next |
+| Frontend — admin flows (create project, manage members) | ⬅ Next |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: June 2026 — backend complete, frontend next*
+*Last updated: June 2026 — backend complete, frontend foundation through dashboard done*
 

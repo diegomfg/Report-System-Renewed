@@ -9,7 +9,9 @@
       "Bash(git *)",
       "Bash(npx prisma *)",
       "Read(//home/prometheus/.claude/projects/-home-prometheus-Desktop-Report-System-Renewed/memory/**)",
-      "Bash(mkdir -p /home/prometheus/.claude/projects/-home-prometheus-Desktop-Report-System-Renewed/memory/)"
+      "Bash(mkdir -p /home/prometheus/.claude/projects/-home-prometheus-Desktop-Report-System-Renewed/memory/)",
+      "Bash(xargs cat)",
+      "Skill(run)"
     ]
   }
 }
