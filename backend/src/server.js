@@ -19,7 +19,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/orgs', require('./routes/orgs'));
 app.use('/api/orgs/:orgId/projects', require('./routes/projects'));
 app.use('/api/orgs/:orgId/projects/:projectId/reports', require('./routes/reports'));
-// app.use('/api/comments', require('./routes/comments'));
+app.use('/api/orgs/:orgId/projects/:projectId/reports/:reportId/comments', require('./routes/comments'));
 
 app.get("/", (req, res) => {
     res.write("<h1>Hello <code>/</code><h1>");

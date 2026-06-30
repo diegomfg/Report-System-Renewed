@@ -172,13 +172,17 @@ model ProjectAccessRequest {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   body      String
   reportId  String
   authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  parentId  String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  report Report @relation(fields: [reportId], references: [id])
-  author User   @relation(fields: [authorId], references: [id])
+  report  Report    @relation(fields: [reportId], references: [id])
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
 }
