@@ -212,12 +212,13 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | Routing skeleton | ✅ done | React Router v6, `<ProtectedRoute>`, nested routes via `<Outlet>` |
 | Register page | ✅ done | Form → `POST /auth/register` → auto-login → redirect |
 | Login page | ✅ done | Form → `POST /auth/login` → redirect |
-| App shell | ✅ done | `AppLayout` with sidebar (org name, nav, user/logout) |
-| Onboarding | ✅ done | Inline: create org form + browse orgs + request to join |
-| Dashboard | ✅ done | Project cards grid with member/report counts and access badges |
-| Project detail page | ⬅ next | Click card → view reports |
-| Reports (create/view) | ⬅ next | Within a project |
-| Admin flows | ⬅ next | Create project, manage members |
+| App shell | ✅ done | `AppLayout` with sidebar (org name, nav links, user/logout) |
+| Onboarding | ✅ done | Create org + browse/join orgs + sign-out button for waiting users |
+| Dashboard | ✅ done | Project grid; create-project modal (admin); request-to-join button (member) |
+| Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
+| Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/members` in sidebar |
+| Report detail page | ⬅ next | View report, comments, assignees, reviewers |
+| Admin member management | ⬅ next | Add/remove project members from project detail |
 
 ---
 

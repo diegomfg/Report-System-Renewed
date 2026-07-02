@@ -4,6 +4,8 @@ import AppLayout from './layouts/AppLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import ProjectPage from './pages/ProjectPage';
+import MembersPage from './pages/MembersPage';
 
 function ProtectedRoute({ children }) {
     const { user, loading } = useAuth();
@@ -25,6 +27,8 @@ export default function App() {
                 }
             >
                 <Route index element={<DashboardPage />} />
+                <Route path="projects/:projectId" element={<ProjectPage />} />
+                <Route path="members" element={<MembersPage />} />
             </Route>
         </Routes>
     );

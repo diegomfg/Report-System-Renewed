@@ -40,6 +40,9 @@ function Sidebar() {
                     <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                         Projects
                     </NavLink>
+                    <NavLink to="/members" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                        Members
+                    </NavLink>
                 </nav>
             </div>
             <div className="sidebar-bottom">

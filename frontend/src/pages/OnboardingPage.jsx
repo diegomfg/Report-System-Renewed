@@ -3,8 +3,11 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
 export default function OnboardingPage() {
+    const { logout } = useAuth();
+
     return (
         <div className="onboarding-page">
+            <button className="onboarding-signout btn-logout" onClick={logout}>Sign out</button>
             <div className="onboarding-header">
                 <h1>Welcome to Report System</h1>
                 <p>You're not part of an organization yet. Create one or request to join an existing one.</p>

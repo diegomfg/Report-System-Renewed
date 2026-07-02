@@ -193,8 +193,10 @@ frontend/src/
   pages/
     LoginPage.jsx
     RegisterPage.jsx
-    OnboardingPage.jsx — create org or browse+join; shown when user has no org
-    DashboardPage.jsx  — project cards grid
+    OnboardingPage.jsx — create org or browse+join; sign-out button for waiting users
+    DashboardPage.jsx  — project cards grid; create-project modal (admin); request-to-join button (member)
+    ProjectPage.jsx    — project detail; reports grid; join requests (admin); danger zone (admin)
+    MembersPage.jsx    — org member list; org join requests with approve/deny (admin)
   App.jsx              — route tree
   main.jsx             — BrowserRouter + AuthProvider wrapping App
   index.css            — design tokens + all shared styles
@@ -212,13 +214,15 @@ frontend/src/
 ### Route structure
 
 ```
-/login          → LoginPage          (public)
-/register       → RegisterPage       (public)
-/               → ProtectedRoute
-                    └── AppLayout
-                          ├── (no org) → OnboardingPage (inline, no sidebar)
-                          └── (has org) → Sidebar + <Outlet>
-                                └── index → DashboardPage
+/login                    → LoginPage          (public)
+/register                 → RegisterPage       (public)
+/                         → ProtectedRoute
+                              └── AppLayout
+                                    ├── (no org) → OnboardingPage (inline, no sidebar)
+                                    └── (has org) → Sidebar + <Outlet>
+                                          ├── index              → DashboardPage
+                                          ├── projects/:projectId → ProjectPage
+                                          └── members            → MembersPage
 ```
 
 `ProtectedRoute` redirects unauthenticated users to `/login`. `AppLayout` gates on `user.organizationId` — users with no org see the onboarding panel instead of the sidebar.
@@ -232,7 +236,27 @@ Shown inline when `user.organizationId === null`. Two panels side by side:
 
 ### Dashboard
 
-Calls `GET /api/orgs/:orgId/projects` using `user.organizationId` from context. Renders a responsive card grid. Each card shows: name, description, member count, report count, and a `yourStatus` badge (`Member` / `Pending`) from the API's per-project access field.
+Calls `GET /api/orgs/:orgId/projects` using `user.organizationId` from context. Renders a responsive card grid. Each card shows: name, description, member count, report count, created date, and a `yourStatus` badge (`Member` / `Pending`). Cards navigate to the project detail page on click. For `member`-role users on projects where `yourStatus === null`, a "Request to join" button appears that calls `POST /orgs/:orgId/projects/:projectId/request` and optimistically flips the card to "Pending". Admins see a "New Project" button in the header that opens a create-project modal.
+
+### Project detail page
+
+Calls `GET /orgs/:orgId/projects/:projectId` and `GET .../reports` in parallel (plus `GET .../requests` for admins). Renders three sections:
+
+- **Header** — project name, description, created date, member count, report status summary.
+- **Join Requests** (admin only) — pending project access requests with Approve / Deny inline buttons that call `PATCH .../requests/:requestId`.
+- **Reports** — same card grid as the dashboard. Each report card shows title, severity badge (color-coded), status badge, created date, and author. "New Report" button (for project members and admins) opens a create-report modal. Empty state shows a "Create new report" button for eligible users.
+- **Danger Zone** (admin only) — "Delete Project" button that opens a GitHub-style confirmation modal requiring the admin to type the project name before the delete (`DELETE /orgs/:orgId/projects/:projectId`) is enabled.
+
+### Members page (`/members`)
+
+Accessible from the sidebar by all users. Calls `GET /orgs/:orgId` for the member list and `GET /orgs/:orgId/requests` (admin only) for pending org join requests.
+
+- **Join Requests** (admin only) — pending org-level join requests with Approve / Deny buttons calling `PATCH /orgs/:orgId/requests/:requestId`. Badge on the heading shows count when requests are present.
+- **Members** — all current org members with name, email, and role badge.
+
+### Onboarding sign-out
+
+The onboarding page renders a "Sign out" button in the top-right corner so users who've submitted an org join request can log out and wait for approval without needing to use browser navigation.
 
 \---
 
@@ -262,14 +286,16 @@ HTTP Request
 | Projects | ✅ Done |
 | Reports | ✅ Done |
 | Comments | ✅ Done |
-| Frontend — foundation, auth pages, shell, dashboard | ✅ Done |
-| Frontend — project detail page | ⬅ Next |
-| Frontend — reports (create/view within a project) | ⬅ Next |
-| Frontend — admin flows (create project, manage members) | ⬅ Next |
+| Frontend — foundation, auth pages, shell, onboarding | ✅ Done |
+| Frontend — dashboard (project grid, create project, request to join) | ✅ Done |
+| Frontend — project detail (reports grid, create report, join requests, delete) | ✅ Done |
+| Frontend — members page (org member list, org join requests) | ✅ Done |
+| Frontend — report detail page (view report, comments, assignees, reviewers) | ⬅ Next |
+| Frontend — admin member management (add/remove project members) | ⬅ Next |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: June 2026 — backend complete, frontend foundation through dashboard done*
+*Last updated: July 2026 — backend complete, frontend through project detail and members page done*
 

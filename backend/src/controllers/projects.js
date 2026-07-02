@@ -20,12 +20,16 @@ exports.createProject = async (req, res) => {
             return res.status(400).json({ error: 'Project name is required' });
         }
 
-        const project = await prisma.project.create({
-            data: {
-                name: name.trim(),
-                description: description?.trim() || null,
-                organizationId: orgId
-            }
+        const project = await prisma.$transaction(async (tx) => {
+            const p = await tx.project.create({
+                data: {
+                    name: name.trim(),
+                    description: description?.trim() || null,
+                    organizationId: orgId
+                }
+            });
+            await tx.userProject.create({ data: { userId: req.user.id, projectId: p.id } });
+            return p;
         });
 
         return res.status(201).json({ message: 'Project created successfully', project });
