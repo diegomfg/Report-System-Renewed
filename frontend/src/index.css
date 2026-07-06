@@ -1094,6 +1094,28 @@ a:hover {
   font-family: inherit;
 }
 
+/* ── Members management (project detail) — bigger, more noticeable ── */
+
+.members-management .person-chip {
+  padding: 10px 16px;
+  font-size: 15px;
+  background: var(--input-bg);
+}
+
+.members-management .chip-remove {
+  font-size: 20px;
+}
+
+.members-management .person-picker select {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.members-management .person-picker button {
+  padding: 10px 18px;
+  font-size: 14px;
+}
+
 /* ── Comments ─────────────────────────────────────────────── */
 
 .comments-section {

@@ -200,7 +200,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | 3 | Projects                        | ✅ done      | Create project, assign members (Admin)                   |
 | 4 | Reports                         | ✅ done      | Full CRUD, assignees, reviewers                          |
 | 5 | Comments                        | ✅ done      | Threaded (1-level), edit, tombstone delete               |
-| 6 | React Frontend                  | 🔄 in progress | Foundation + auth pages + app shell + dashboard done  |
+| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, and admin member management done. Org switching and leave-project/org actions remain |
 
 ### Frontend — Progress
 
@@ -218,7 +218,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
 | Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/members` in sidebar |
 | Report detail page | ✅ done | `/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete), danger zone delete |
-| Admin member management | ⬅ next | Add/remove project members from project detail |
+| Admin member management | ✅ done | Members section on project detail — chip list + remove (with confirmation modal) + add-member picker (admin only), read-only list for others |
 
 ---
 
@@ -234,4 +234,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: July 2026 — backend complete, frontend through report detail page done (comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges on report cards); admin member management next*
+*Last updated: July 2026 — backend complete, frontend through admin member management done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal). Org switching and leave-project/org actions remain*

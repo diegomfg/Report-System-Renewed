@@ -188,6 +188,8 @@ The frontend lives in `frontend/` at the project root. It's a Vite + React app (
 frontend/src/
   api/
     axios.js           — preconfigured Axios instance (baseURL + credentials)
+  components/
+    PersonPicker.jsx   — shared select + "Add" control; used for assignees/reviewers (ReportPage) and project members (ProjectPage)
   context/
     AuthContext.jsx    — user state, login/logout/refreshUser, session restore
   layouts/
@@ -244,9 +246,10 @@ Calls `GET /api/orgs/:orgId/projects` using `user.organizationId` from context. 
 
 ### Project detail page
 
-Calls `GET /orgs/:orgId/projects/:projectId` and `GET .../reports` in parallel (plus `GET .../requests` for admins). Renders three sections:
+Calls `GET /orgs/:orgId/projects/:projectId` and `GET .../reports` in parallel (plus `GET .../requests` for admins). Renders four sections:
 
 - **Header** — project name, description, created date, member count, report status summary.
+- **Members** — current project members (`members.filter(projectStatus === 'in_project')`) as chip pills, visible to everyone. Admin-only: a remove (×) control per chip (opens `RemoveMemberModal` — simple Cancel/Remove confirmation, no name-typing, calls `DELETE .../members/:userId`) and an "Add member" `PersonPicker` sourced from org members with `projectStatus === null`. Users already mid-request (`projectStatus === 'pending'`) are deliberately excluded from the add-picker candidates — they're handled through the Join Requests section below instead, to avoid two overlapping paths for the same pending case. Styled larger and with a lighter fill (`.members-management` modifier class) than the assignee/reviewer chips on the report detail page, since this is the primary admin-facing management surface on this page.
 - **Join Requests** (admin only) — pending project access requests with Approve / Deny inline buttons that call `PATCH .../requests/:requestId`.
 - **Reports** — same card grid as the dashboard. Each report card shows title, severity badge (color-coded), status badge, created date, and author. Cards navigate to the report detail page on click. "New Report" button (for project members and admins) opens a create-report modal. Empty state shows a "Create new report" button for eligible users.
 - **Danger Zone** (admin only) — "Delete Project" button that opens a GitHub-style confirmation modal requiring the admin to type the project name before the delete (`DELETE /orgs/:orgId/projects/:projectId`) is enabled.
@@ -263,7 +266,7 @@ Permissions are mirrored client-side from the backend rules:
 - **Comment** — admin, creator, assignee, or reviewer. Assignee candidates are filtered to project members not already assigned; reviewer candidates are any org member not already a reviewer.
 
 - **Header** — title, Edit button (project members), severity/status badges, description, creator + created date.
-- **Assignees / Reviewers** — chip lists with a remove (×) control per chip, plus a `<select>` + "Add" picker below, both admin/creator only.
+- **Assignees / Reviewers** — chip lists with a remove (×) control per chip, plus the shared `PersonPicker` component below (`<select>` + "Add" button), both admin/creator only.
 - **Comments** — top-level list with one level of nested replies (matches the backend's 1-level-deep rule); tombstoned comments render `"[deleted]"` with no author but keep their replies visible. Reply is only offered on top-level, non-deleted comments; Edit only for the comment's own author; Delete for author or admin.
 - **Danger Zone** (admin/creator) — delete report via a simple confirm modal (no name-typing, unlike project deletion — a report is a smaller blast radius than a whole project).
 
@@ -313,11 +316,13 @@ HTTP Request
 | Frontend — project detail (reports grid, create report, join requests, delete) | ✅ Done |
 | Frontend — members page (org member list, org join requests) | ✅ Done |
 | Frontend — report detail page (view report, comments, assignees, reviewers, edit/delete) | ✅ Done |
-| Frontend — admin member management (add/remove project members) | ⬅ Next |
+| Frontend — admin member management (add/remove project members) | ✅ Done |
+| Frontend — org switching (multi-org users) | Not yet built |
+| Frontend — leave project / leave org actions | Not yet built (backend `leaveProject` exists, unused) |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: July 2026 — backend complete, frontend through report detail page done*
+*Last updated: July 2026 — backend complete, frontend through admin member management done*
 

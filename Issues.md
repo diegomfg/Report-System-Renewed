@@ -164,8 +164,25 @@ Local dev DB was missing the `add_comment_threading` migration (applied via `pri
 
 ---
 
+## #8 — Frontend: Admin Member Management
+**Status:** Closed
+
+Add/remove project members directly from the project detail page.
+
+### Scope
+- New "Members" section on `ProjectPage.jsx`, between the header and Join Requests — visible to all viewers as a read-only chip list, with add/remove controls gated to admin
+- Add-member picker sourced from org members with `projectStatus === null` only — users with a pending request are deliberately excluded, since they already have a dedicated Approve/Deny flow in the existing Join Requests section (showing them in both places would create two overlapping paths for the same action)
+- `RemoveMemberModal` — simple Cancel/Remove confirmation (no name-typing, unlike project deletion), consistent with the report delete confirm's weight
+- Extracted `PersonPicker` (originally built inline for #7's assignee/reviewer pickers) into `frontend/src/components/PersonPicker.jsx` — first shared component in the frontend, now used by both `ReportPage` and `ProjectPage`
+- Follow-up polish: the Members section chips/picker/buttons were sized up and given a lighter fill (`.members-management` CSS modifier) so this admin-facing surface reads as more prominent than the assignee/reviewer chips on the report detail page
+
+### Explicitly out of scope
+- Self-service "Leave Project" button for non-admin members — backend `leaveProject` endpoint already exists but is unused; deferred as a separate follow-up rather than folded in here
+
+---
+
 ## #4 — Frontend: React SPA
-**Status:** Open (Next) — auth, shell, dashboard, project detail, members page, and report detail (#7) all done; admin member management remains
+**Status:** Open (Next) — auth, shell, dashboard, project detail, members page, report detail (#7), and admin member management (#8) all done; org switching and leave-project/org actions remain
 
 Build a React SPA consuming the finished API.
 

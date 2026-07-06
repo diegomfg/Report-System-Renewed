@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import PersonPicker from '../components/PersonPicker';
 
 export default function ProjectPage() {
     const { projectId } = useParams();
@@ -17,6 +18,7 @@ export default function ProjectPage() {
     const [error, setError] = useState('');
     const [showCreate, setShowCreate] = useState(false);
     const [showDelete, setShowDelete] = useState(false);
+    const [removeTarget, setRemoveTarget] = useState(null);
 
     const load = useCallback(async () => {
         try {
@@ -66,6 +68,19 @@ export default function ProjectPage() {
         }
     };
 
+    const projectMembers = members.filter(m => m.projectStatus === 'in_project');
+    const addableMembers = members.filter(m => m.projectStatus === null);
+
+    const addMember = async (userId) => {
+        try {
+            await api.post(`/orgs/${orgId}/projects/${projectId}/members`, { userId });
+            load();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to add member');
+        }
+    };
+
+
     return (
         <div className="project-detail">
             <Link to="/" className="back-link">← Projects</Link>
@@ -82,6 +97,39 @@ export default function ProjectPage() {
                     <span className="meta-sep">·</span>
                     <span>{statusSummary}</span>
                 </div>
+            </div>
+
+            <div className="people-section members-management">
+                <div className="section-header">
+                    <h2>Members <span className="members-count">({projectMembers.length})</span></h2>
+                </div>
+                {projectMembers.length === 0 ? (
+                    <p className="people-empty">No members yet.</p>
+                ) : (
+                    <ul className="person-list">
+                        {projectMembers.map(m => (
+                            <li key={m.id} className="person-chip">
+                                <span>{m.name}</span>
+                                {user.role === 'admin' && (
+                                    <button
+                                        className="chip-remove"
+                                        aria-label={`Remove ${m.name}`}
+                                        onClick={() => setRemoveTarget(m)}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                {user.role === 'admin' && addableMembers.length > 0 && (
+                    <PersonPicker
+                        candidates={addableMembers}
+                        placeholder="Add member…"
+                        onAdd={addMember}
+                    />
+                )}
             </div>
 
             {user.role === 'admin' && (
@@ -187,6 +235,16 @@ export default function ProjectPage() {
                     onDeleted={() => navigate('/')}
                 />
             )}
+
+            {removeTarget && (
+                <RemoveMemberModal
+                    member={removeTarget}
+                    orgId={orgId}
+                    projectId={projectId}
+                    onClose={() => setRemoveTarget(null)}
+                    onRemoved={() => { setRemoveTarget(null); load(); }}
+                />
+            )}
         </div>
     );
 }
@@ -278,6 +336,41 @@ function CreateReportModal({ orgId, projectId, onClose, onCreated }) {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+function RemoveMemberModal({ member, orgId, projectId, onClose, onRemoved }) {
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const submit = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            await api.delete(`/orgs/${orgId}/projects/${projectId}/members/${member.id}`);
+            onRemoved();
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to remove member');
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+                <h2>Remove member</h2>
+                <p className="delete-warning">
+                    Are you sure you want to remove <strong>{member.name}</strong> from this project?
+                </p>
+                {error && <div className="form-error">{error}</div>}
+                <div className="modal-actions">
+                    <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                    <button type="button" className="btn-danger" onClick={submit} disabled={loading}>
+                        {loading ? 'Removing…' : 'Remove'}
+                    </button>
+                </div>
             </div>
         </div>
     );
