@@ -217,7 +217,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | Dashboard | ✅ done | Project grid; create-project modal (admin); request-to-join button (member) |
 | Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
 | Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/members` in sidebar |
-| Report detail page | ⬅ next | View report, comments, assignees, reviewers |
+| Report detail page | ✅ done | `/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete), danger zone delete |
 | Admin member management | ⬅ next | Add/remove project members from project detail |
 
 ---
@@ -234,4 +234,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: June 2026 — backend complete, frontend foundation + auth + shell + dashboard done*
+*Last updated: July 2026 — backend complete, frontend through report detail page done (comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges on report cards); admin member management next*

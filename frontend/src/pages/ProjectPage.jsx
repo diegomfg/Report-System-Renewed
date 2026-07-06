@@ -141,7 +141,11 @@ export default function ProjectPage() {
                 ) : (
                     <div className="project-grid">
                         {reports.map(report => (
-                            <ReportCard key={report.id} report={report} />
+                            <ReportCard
+                                key={report.id}
+                                report={report}
+                                onClick={() => navigate(`/projects/${projectId}/reports/${report.id}`)}
+                            />
                         ))}
                     </div>
                 )}
@@ -187,9 +191,15 @@ export default function ProjectPage() {
     );
 }
 
-function ReportCard({ report }) {
+function ReportCard({ report, onClick }) {
     return (
-        <div className="project-card">
+        <div className="project-card" onClick={onClick}>
+            {(report.assignedToMe || report.isReviewer) && (
+                <div className="card-tags">
+                    {report.assignedToMe && <span className="card-tag">Assigned to you</span>}
+                    {report.isReviewer && <span className="card-tag card-tag-reviewer">Reviewing</span>}
+                </div>
+            )}
             <div className="project-card-header">
                 <h2>{report.title}</h2>
             </div>

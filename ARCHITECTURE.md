@@ -108,8 +108,10 @@ Admin and creator checks use `req.membership.role === 'admin'` (set by `authoriz
 `GET .../reports` accepts optional `?severity=` and `?status=` query params. Invalid enum values are silently ignored so the request always returns rather than erroring on a bad filter.
 
 **List vs Detail responses:**
-- List — includes `createdBy { id, name }` and `_count { assignees, reviewers, comments }`
-- Detail — includes full `createdBy`, full `assignees[]`, `reviewers[]`, and `comments[]` (ordered oldest-first)
+- List — includes `createdBy { id, name }`, `_count { assignees, reviewers, comments }`, and two booleans computed for the requesting user: `assignedToMe` and `isReviewer` (each derived from a relation filtered to `userId`, then stripped from the response — the frontend only sees the flags, not the raw filtered arrays)
+- Detail — includes full `createdBy`, full `assignees[]`, `reviewers[]`, and `comments[]` (ordered oldest-first, flat — see note below)
+
+**Note on detail `comments[]`:** `getReport`'s `comments` include is a flat list, not threaded, and isn't sanitized for tombstones. The frontend does not use it — it fetches comments separately via the dedicated comments endpoint (see below), which returns the properly threaded and sanitized shape. This flat field is effectively unused dead weight in the detail response; candidate for removal if the API is ever tightened up.
 
 \---
 
@@ -196,6 +198,7 @@ frontend/src/
     OnboardingPage.jsx — create org or browse+join; sign-out button for waiting users
     DashboardPage.jsx  — project cards grid; create-project modal (admin); request-to-join button (member)
     ProjectPage.jsx    — project detail; reports grid; join requests (admin); danger zone (admin)
+    ReportPage.jsx     — report detail; edit modal; assignee/reviewer pickers; threaded comments; danger zone (admin/creator)
     MembersPage.jsx    — org member list; org join requests with approve/deny (admin)
   App.jsx              — route tree
   main.jsx             — BrowserRouter + AuthProvider wrapping App
@@ -222,6 +225,7 @@ frontend/src/
                                     └── (has org) → Sidebar + <Outlet>
                                           ├── index              → DashboardPage
                                           ├── projects/:projectId → ProjectPage
+                                          ├── projects/:projectId/reports/:reportId → ReportPage
                                           └── members            → MembersPage
 ```
 
@@ -244,8 +248,26 @@ Calls `GET /orgs/:orgId/projects/:projectId` and `GET .../reports` in parallel (
 
 - **Header** — project name, description, created date, member count, report status summary.
 - **Join Requests** (admin only) — pending project access requests with Approve / Deny inline buttons that call `PATCH .../requests/:requestId`.
-- **Reports** — same card grid as the dashboard. Each report card shows title, severity badge (color-coded), status badge, created date, and author. "New Report" button (for project members and admins) opens a create-report modal. Empty state shows a "Create new report" button for eligible users.
+- **Reports** — same card grid as the dashboard. Each report card shows title, severity badge (color-coded), status badge, created date, and author. Cards navigate to the report detail page on click. "New Report" button (for project members and admins) opens a create-report modal. Empty state shows a "Create new report" button for eligible users.
 - **Danger Zone** (admin only) — "Delete Project" button that opens a GitHub-style confirmation modal requiring the admin to type the project name before the delete (`DELETE /orgs/:orgId/projects/:projectId`) is enabled.
+
+**Assigned-to-me / reviewing badges:** each report card renders a small floating pill in the top-right corner (overlapping the card border, deliberately outside the normal badge row so it doesn't blend in with severity/status) — a purple "Assigned to you" tag when `assignedToMe` is true, an amber "Reviewing" tag when `isReviewer` is true. Both can appear together if the user holds both roles on the same report.
+
+### Report detail page (`/projects/:projectId/reports/:reportId`)
+
+Loads three endpoints in parallel: `GET .../reports/:reportId` (report + assignees + reviewers + createdBy), `GET .../reports/:reportId/comments` (threaded, sanitized comments — not the flat `report.comments` field), and `GET /orgs/:orgId/projects/:projectId` (reused only for its `members` list, to populate the assignee/reviewer pickers).
+
+Permissions are mirrored client-side from the backend rules:
+- **Edit fields** (title/description/severity/status) — any project member, via a single combined edit modal.
+- **Manage assignees/reviewers, delete report** — admin or report creator only.
+- **Comment** — admin, creator, assignee, or reviewer. Assignee candidates are filtered to project members not already assigned; reviewer candidates are any org member not already a reviewer.
+
+- **Header** — title, Edit button (project members), severity/status badges, description, creator + created date.
+- **Assignees / Reviewers** — chip lists with a remove (×) control per chip, plus a `<select>` + "Add" picker below, both admin/creator only.
+- **Comments** — top-level list with one level of nested replies (matches the backend's 1-level-deep rule); tombstoned comments render `"[deleted]"` with no author but keep their replies visible. Reply is only offered on top-level, non-deleted comments; Edit only for the comment's own author; Delete for author or admin.
+- **Danger Zone** (admin/creator) — delete report via a simple confirm modal (no name-typing, unlike project deletion — a report is a smaller blast radius than a whole project).
+
+All mutations (assignee/reviewer add-remove, comment post/edit/delete, report edit/delete) trigger a full reload rather than optimistic local state updates, consistent with the rest of the app's pattern (`ProjectPage`, `MembersPage`).
 
 ### Members page (`/members`)
 
@@ -290,12 +312,12 @@ HTTP Request
 | Frontend — dashboard (project grid, create project, request to join) | ✅ Done |
 | Frontend — project detail (reports grid, create report, join requests, delete) | ✅ Done |
 | Frontend — members page (org member list, org join requests) | ✅ Done |
-| Frontend — report detail page (view report, comments, assignees, reviewers) | ⬅ Next |
+| Frontend — report detail page (view report, comments, assignees, reviewers, edit/delete) | ✅ Done |
 | Frontend — admin member management (add/remove project members) | ⬅ Next |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: July 2026 — backend complete, frontend through project detail and members page done*
+*Last updated: July 2026 — backend complete, frontend through report detail page done*
 

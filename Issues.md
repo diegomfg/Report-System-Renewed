@@ -137,12 +137,35 @@ Threaded comments on reports with editing and tombstone deletes.
 - **`canComment` helper** — single Prisma query checks creator, assignees, reviewers in one shot; admin short-circuits before the query
 
 ### Known limitation
-- `getReport` still returns `comments[]` as a flat array (no nested replies). Should be updated or removed when frontend is built.
+- `getReport` still returns `comments[]` as a flat array (no nested replies). Worked around at the frontend layer (see #7) by calling the dedicated comments endpoint instead — the flat field itself was never fixed and is currently unused dead weight in the detail response.
+
+---
+
+## #7 — Frontend: Report Detail Page
+**Status:** Closed
+
+Report detail page at `/projects/:projectId/reports/:reportId` — view/edit a report, manage assignees and reviewers, and threaded commenting.
+
+### Scope
+- `frontend/src/pages/ReportPage.jsx` — new page, route added in `App.jsx`
+- Edit modal — title/description/severity/status, any project member (mirrors backend's `updateReport` rule, not just admin/creator)
+- Assignee/reviewer chip lists + `<select>` picker, admin/creator only — candidates filtered client-side (assignees: project members not already assigned; reviewers: org members not already reviewers)
+- Threaded comments — reply (top-level only), edit (author only), tombstone delete (author or admin) — fetched from the dedicated `GET .../comments` endpoint, not `report.comments`
+- Danger zone delete (admin/creator) — simple confirm modal, no name-typing (smaller blast radius than deleting a whole project)
+- Report cards on `ProjectPage` now navigate to the detail page on click (previously non-interactive)
+
+### Follow-up: assignment badges
+Added a purple "Assigned to you" / amber "Reviewing" floating corner tag to report cards, so a user scanning a project's reports grid can immediately spot which reports involve them.
+- Backend: `listReports` now includes `assignees`/`reviewers` filtered to `req.user.id`, collapsed into `assignedToMe`/`isReviewer` booleans on the response (raw filtered arrays stripped before sending)
+- Frontend: badges render as absolutely-positioned pills hanging over the top-right corner of `.project-card`, deliberately pulled out of the existing severity/status badge row so they read as a distinct signal at a glance
+
+### Gotcha hit during this work
+Local dev DB was missing the `add_comment_threading` migration (applied via `prisma migrate deploy`) **and** the generated Prisma client was stale relative to `schema.prisma` (fixed via `prisma generate`) — these are two independent failure modes that both surface as the same `Invalid prisma.comment.findMany() invocation` error. Worth checking both if this resurfaces after a fresh clone or environment reset.
 
 ---
 
 ## #4 — Frontend: React SPA
-**Status:** Open (Next)
+**Status:** Open (Next) — auth, shell, dashboard, project detail, members page, and report detail (#7) all done; admin member management remains
 
 Build a React SPA consuming the finished API.
 
@@ -159,8 +182,8 @@ Build a React SPA consuming the finished API.
 - **Auth pages** — Register and Login
 - **Top-level dashboard** — Shows all organizations the user belongs to
 - **Organization page** — Clicking an org shows its projects
-- **Project page** — Shows reports; project members can create reports
-- **Report detail** — Full report with assignees, reviewers, and threaded comments
+- **Project page** — Shows reports; project members can create reports ✅
+- **Report detail** — Full report with assignees, reviewers, and threaded comments ✅ (#7)
 - **Context switching** — User can switch between orgs
 - **Leave actions** — UI for leaving projects and orgs
 

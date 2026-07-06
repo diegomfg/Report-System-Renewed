@@ -60,6 +60,7 @@ exports.createReport = async (req, res) => {
 exports.listReports = async (req, res) => {
     try {
         const { orgId, projectId } = req.params;
+        const userId = req.user.id;
         const { severity, status } = req.query;
 
         const where = { projectId, organizationId: orgId, deletedAt: null };
@@ -70,12 +71,20 @@ exports.listReports = async (req, res) => {
             where,
             include: {
                 createdBy: { select: { id: true, name: true } },
+                assignees: { where: { userId }, select: { userId: true } },
+                reviewers: { where: { userId }, select: { userId: true } },
                 _count: { select: { assignees: true, reviewers: true, comments: true } }
             },
             orderBy: { createdAt: 'desc' }
         });
 
-        return res.status(200).json({ reports });
+        const enriched = reports.map(({ assignees, reviewers, ...report }) => ({
+            ...report,
+            assignedToMe: assignees.length > 0,
+            isReviewer: reviewers.length > 0
+        }));
+
+        return res.status(200).json({ reports: enriched });
 
     } catch (error) {
         console.error('List reports error:', error);

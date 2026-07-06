@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectPage from './pages/ProjectPage';
+import ReportPage from './pages/ReportPage';
 import MembersPage from './pages/MembersPage';
 
 function ProtectedRoute({ children }) {
@@ -28,6 +29,7 @@ export default function App() {
             >
                 <Route index element={<DashboardPage />} />
                 <Route path="projects/:projectId" element={<ProjectPage />} />
+                <Route path="projects/:projectId/reports/:reportId" element={<ReportPage />} />
                 <Route path="members" element={<MembersPage />} />
             </Route>
         </Routes>
