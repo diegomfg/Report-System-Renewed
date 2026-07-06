@@ -31,6 +31,9 @@ Thumbs.db
 # Claude temp files
 tmpclaude-*-cwd
 
+# Claude Code local settings (per-machine permissions, not shared)
+.claude/settings.local.json
+
 # Test coverage
 coverage/
 backend/3000no
