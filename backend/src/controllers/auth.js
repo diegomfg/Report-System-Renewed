@@ -10,11 +10,6 @@ const COOKIE_OPTIONS = {
     maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-async function getMembership(userId) {
-    const m = await prisma.organizationMember.findFirst({ where: { userId } });
-    return { organizationId: m?.organizationId ?? null, role: m?.role ?? null };
-}
-
 exports.register = async (req, res) => {
     const { name, email, password } = req.body;
     try {
@@ -27,8 +22,7 @@ exports.register = async (req, res) => {
         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', token, COOKIE_OPTIONS);
 
-        // New users have no org membership yet
-        res.status(201).json({ id: user.id, name: user.name, email: user.email, role: null, organizationId: null });
+        res.status(201).json({ id: user.id, name: user.name, email: user.email });
     } catch (error) {
         res.status(500).json({ error: 'Registration Failed. Server Error.', details: error.message });
     }
@@ -46,8 +40,7 @@ exports.login = async (req, res) => {
         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', token, COOKIE_OPTIONS);
 
-        const { organizationId, role } = await getMembership(user.id);
-        res.json({ id: user.id, name: user.name, email: user.email, role, organizationId });
+        res.json({ id: user.id, name: user.name, email: user.email });
     } catch (error) {
         res.status(500).json({ error: 'Login Failed. Server Error.' });
     }
@@ -61,8 +54,7 @@ exports.me = async (req, res) => {
         });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const { organizationId, role } = await getMembership(req.user.id);
-        res.json({ ...user, organizationId, role });
+        res.json(user);
     } catch (error) {
         res.status(500).json({ error: 'Server Error' });
     }

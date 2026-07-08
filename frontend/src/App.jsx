@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import AppLayout from './layouts/AppLayout';
+import OrgLayout from './layouts/OrgLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OrgHubPage from './pages/OrgHubPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectPage from './pages/ProjectPage';
 import ReportPage from './pages/ReportPage';
@@ -23,7 +24,15 @@ export default function App() {
                 path="/"
                 element={
                     <ProtectedRoute>
-                        <AppLayout />
+                        <OrgHubPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/orgs/:orgId"
+                element={
+                    <ProtectedRoute>
+                        <OrgLayout />
                     </ProtectedRoute>
                 }
             >

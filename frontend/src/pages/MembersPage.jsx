@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
+import { useOrg } from '../context/OrgContext';
 
 export default function MembersPage() {
-    const { user } = useAuth();
-    const orgId = user.organizationId;
+    const { orgId, role } = useOrg();
 
     const [members, setMembers] = useState([]);
     const [requests, setRequests] = useState([]);
@@ -15,7 +14,7 @@ export default function MembersPage() {
         try {
             const [orgRes, requestsRes] = await Promise.all([
                 api.get(`/orgs/${orgId}`),
-                user.role === 'admin'
+                role === 'admin'
                     ? api.get(`/orgs/${orgId}/requests`)
                     : Promise.resolve({ data: { requests: [] } }),
             ]);
@@ -26,7 +25,7 @@ export default function MembersPage() {
         } finally {
             setLoading(false);
         }
-    }, [orgId, user.role]);
+    }, [orgId, role]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -44,7 +43,7 @@ export default function MembersPage() {
 
     return (
         <div className="members-page">
-            {user.role === 'admin' && (
+            {role === 'admin' && (
                 <div className="requests-section">
                     <div className="section-header">
                         <h2>

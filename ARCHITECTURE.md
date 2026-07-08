@@ -191,13 +191,14 @@ frontend/src/
   components/
     PersonPicker.jsx   — shared select + "Add" control; used for assignees/reviewers (ReportPage) and project members (ProjectPage)
   context/
-    AuthContext.jsx    — user state, login/logout/refreshUser, session restore
+    AuthContext.jsx    — user identity state (id/name/email), login/logout/refreshUser, session restore
+    OrgContext.jsx     — { orgId, orgName, role } for the org currently being viewed; provided by OrgLayout
   layouts/
-    AppLayout.jsx      — sidebar shell + <Outlet>; shows OnboardingPage if no org
+    OrgLayout.jsx      — sidebar shell + <Outlet>, mounted at /orgs/:orgId; fetches org detail, provides OrgContext, renders the org switcher, mobile nav drawer, and leave-org action
   pages/
     LoginPage.jsx
     RegisterPage.jsx
-    OnboardingPage.jsx — create org or browse+join; sign-out button for waiting users
+    OrgHubPage.jsx     — post-login landing page: "your organizations" list, create-org panel, browse+join panel
     DashboardPage.jsx  — project cards grid; create-project modal (admin); request-to-join button (member)
     ProjectPage.jsx    — project detail; reports grid; join requests (admin); danger zone (admin)
     ReportPage.jsx     — report detail; edit modal; assignee/reviewer pickers; threaded comments; danger zone (admin/creator)
@@ -209,36 +210,47 @@ frontend/src/
 
 ### Auth flow
 
-1. On load, `AuthContext` calls `GET /api/auth/me`. If the httpOnly cookie is present and valid, the server returns `{ id, name, email, role, organizationId }` and the user is restored into context. If not, `user` is `null`.
+1. On load, `AuthContext` calls `GET /api/auth/me`. If the httpOnly cookie is present and valid, the server returns `{ id, name, email }` and the user is restored into context. If not, `user` is `null`.
 2. `login(userData)` — called after register/login API responses; sets user in state directly (no extra round-trip since the response already returns the user).
 3. `logout()` — calls `POST /api/auth/logout` (clears the cookie server-side), then sets `user` to `null`.
-4. `refreshUser()` — re-calls `GET /api/auth/me` and updates context. Used after creating an org so the new `organizationId` is reflected without forcing a full page reload.
+4. `refreshUser()` — re-calls `GET /api/auth/me` and updates context.
 
-`role` and `organizationId` on the user object come from `OrganizationMember`, not from the `User` table directly. `GET /api/auth/me` joins through that table before responding.
+**No `role` or `organizationId` on the user object.** A user can belong to multiple orgs (`OrganizationMember` is many-to-many), each with its own role, so neither concept makes sense as a flat field on the auth payload. Role and current-org context instead come from `OrgContext`, populated per-request by `OrgLayout` from `GET /api/orgs/:orgId` (which returns `yourRole` for that specific org).
 
 ### Route structure
 
 ```
 /login                    → LoginPage          (public)
 /register                 → RegisterPage       (public)
-/                         → ProtectedRoute
-                              └── AppLayout
-                                    ├── (no org) → OnboardingPage (inline, no sidebar)
-                                    └── (has org) → Sidebar + <Outlet>
-                                          ├── index              → DashboardPage
-                                          ├── projects/:projectId → ProjectPage
-                                          ├── projects/:projectId/reports/:reportId → ReportPage
-                                          └── members            → MembersPage
+/                         → ProtectedRoute → OrgHubPage (no sidebar)
+/orgs/:orgId              → ProtectedRoute → OrgLayout (sidebar + <Outlet>, provides OrgContext)
+                                    ├── index                                    → DashboardPage
+                                    ├── projects/:projectId                      → ProjectPage
+                                    ├── projects/:projectId/reports/:reportId    → ReportPage
+                                    └── members                                  → MembersPage
 ```
 
-`ProtectedRoute` redirects unauthenticated users to `/login`. `AppLayout` gates on `user.organizationId` — users with no org see the onboarding panel instead of the sidebar.
+`ProtectedRoute` redirects unauthenticated users to `/login`. Org context lives entirely in the URL (`:orgId`) — there is no server-side "active org" session state and the JWT is never re-issued on switch. `OrgLayout` resolves `:orgId` to `{ name, role }` via `GET /api/orgs/:orgId` (403s if the user isn't a member) and writes it to `localStorage.lastOrgId` so the hub page can offer "Continue" into the last-visited org.
 
-### Onboarding
+### Org hub page (`/`)
 
-Shown inline when `user.organizationId === null`. Two panels side by side:
+The landing page after every login — always shown, regardless of how many orgs the user belongs to (no auto-redirect into the last org, by design, so there's always a visible switch/create point).
 
-- **Create org** — `POST /api/orgs` → on success, `refreshUser()` pulls the new `organizationId` into context → `AppLayout` re-renders into the full shell automatically.
-- **Browse orgs** — `GET /api/orgs/browse` → list with "Request to join" buttons → `POST /api/orgs/:id/request` → button becomes "Requested" (optimistic UI).
+- **Your organizations** — `GET /api/orgs` (all orgs the user belongs to, each with `yourRole`), sorted so the org matching `localStorage.lastOrgId` is pinned first with a "Continue" button; others show "Open".
+- **Create org** — `POST /api/orgs` → navigates straight to `/orgs/:newOrgId`.
+- **Browse orgs** — `GET /api/orgs/browse` → list with "Request to join" buttons → `POST /api/orgs/:id/request` → button becomes "Requested" (optimistic UI). Available even to users already in one or more orgs.
+
+### Org switcher + leave org (sidebar, `OrgLayout.jsx`)
+
+The org name in the sidebar is a button, not static text. Clicking it opens a dropdown (lazily fetches `GET /api/orgs` on first open) listing the user's other orgs; picking one navigates to `/orgs/:id`. A "See all organizations" link returns to the hub.
+
+Below the nav links, "Leave organization" opens a confirm modal (simple Cancel/Leave, no name-typing — leaving is reversible via re-request) that calls `DELETE /orgs/:id/leave`. On success it clears `lastOrgId` from localStorage if it pointed at the org just left, then routes to `/`. The backend's sole-admin block ("Cannot leave: you are the only admin…") surfaces directly in the modal.
+
+**What leaving does server-side (`leaveOrg` in `orgs.js`):** in one transaction — deletes the user's `UserProject` rows for that org's projects, deletes their `ReportAssignee`/`ReportReviewer` rows for that org's reports, then deletes the `OrganizationMember` row. `Report.createdById` is left untouched (historical provenance, same as GitHub keeping "opened by" after someone leaves). Blocked if the user is the org's only admin.
+
+### Mobile nav
+
+Below 768px, `.sidebar` becomes a fixed off-canvas drawer (`transform: translateX(-100%)` by default) triggered by a ☰ button fixed top-left. The toggle button only renders while the drawer is closed — this avoids it visually overlapping the drawer's own header once open, and closing already has three other paths (backdrop tap, any nav-link click, switching org). A dim backdrop (`.sidebar-backdrop`) sits between the content and the drawer and closes it on tap.
 
 ### Dashboard
 
@@ -317,12 +329,14 @@ HTTP Request
 | Frontend — members page (org member list, org join requests) | ✅ Done |
 | Frontend — report detail page (view report, comments, assignees, reviewers, edit/delete) | ✅ Done |
 | Frontend — admin member management (add/remove project members) | ✅ Done |
-| Frontend — org switching (multi-org users) | Not yet built |
-| Frontend — leave project / leave org actions | Not yet built (backend `leaveProject` exists, unused) |
+| Frontend — org switching (org hub page, sidebar switcher, org-scoped routing) | ✅ Done |
+| Frontend — leave org action (sidebar, with confirm modal) | ✅ Done |
+| Frontend — mobile nav (off-canvas drawer + burger toggle) | ✅ Done |
+| Frontend — leave project action | Not yet built (backend `leaveProject` exists, unused) |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: July 2026 — backend complete, frontend through admin member management done*
+*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, and mobile nav done. Leave-project action remains.*
 

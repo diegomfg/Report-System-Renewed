@@ -71,10 +71,9 @@ exports.getUserOrgs = async (req, res) => {
         const userId = req.user.id;
 
         const memberships = await prisma.organizationMember.findMany({
-            where: { userId },
+            where: { userId, organization: { deletedAt: null } },
             include: {
                 organization: {
-                    where: { deletedAt: null },
                     include: {
                         _count: { select: { projects: true, members: true } }
                     }
@@ -83,13 +82,11 @@ exports.getUserOrgs = async (req, res) => {
             orderBy: { joinedAt: 'desc' }
         });
 
-        const orgs = memberships
-            .filter(m => m.organization !== null)
-            .map(m => ({
-                ...m.organization,
-                yourRole: m.role,
-                joinedAt: m.joinedAt
-            }));
+        const orgs = memberships.map(m => ({
+            ...m.organization,
+            yourRole: m.role,
+            joinedAt: m.joinedAt
+        }));
 
         return res.status(200).json({ organizations: orgs });
 
@@ -303,6 +300,14 @@ exports.leaveOrg = async (req, res) => {
                     where: { userId, projectId: { in: projectIds } }
                 });
             }
+
+            await tx.reportAssignee.deleteMany({
+                where: { userId, report: { organizationId: id } }
+            });
+
+            await tx.reportReviewer.deleteMany({
+                where: { userId, report: { organizationId: id } }
+            });
 
             await tx.organizationMember.delete({
                 where: { userId_organizationId: { userId, organizationId: id } }

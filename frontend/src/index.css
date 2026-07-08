@@ -209,6 +209,93 @@ a:hover {
   color: var(--text-h);
 }
 
+.sidebar-org-switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.sidebar-org-switcher-caret {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-h);
+  flex-shrink: 0;
+}
+
+.sidebar-org-switcher:hover {
+  background: var(--accent-bg);
+}
+
+.sidebar-org-switcher:hover .sidebar-org-name {
+  color: var(--accent);
+}
+
+.sidebar-org-switcher:hover .sidebar-org-switcher-caret {
+  color: var(--accent);
+}
+
+.org-switcher-dropdown {
+  position: relative;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.org-switcher-loading {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.org-switcher-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.org-switcher-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.org-switcher-item:hover {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.org-switcher-item.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.org-switcher-all {
+  display: block;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -276,6 +363,62 @@ a:hover {
   flex: 1;
   overflow-y: auto;
   padding: 32px 40px;
+}
+
+.mobile-nav-toggle {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 40;
+    width: 40px;
+    height: 40px;
+    background: var(--bg, #fff);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--text-h);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 30;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 35;
+    background: var(--bg, #fff);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow);
+  }
+
+  .sidebar.sidebar-mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-main {
+    padding: 72px 20px 32px;
+  }
 }
 
 /* ── Badges ──────────────────────────────────────────────── */
@@ -447,6 +590,10 @@ a:hover {
   font-size: 15px;
 }
 
+.your-orgs-panel {
+  margin-bottom: 24px;
+}
+
 .onboarding-panels {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -504,6 +651,14 @@ a:hover {
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.org-list-item .btn-primary {
+  width: auto;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  margin-top: 0;
+  font-size: 13px;
 }
 
 .org-list-info {

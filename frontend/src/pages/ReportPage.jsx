@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useOrg } from '../context/OrgContext';
 import PersonPicker from '../components/PersonPicker';
 
 export default function ReportPage() {
     const { projectId, reportId } = useParams();
     const { user } = useAuth();
+    const { orgId, role } = useOrg();
     const navigate = useNavigate();
-    const orgId = user.organizationId;
 
     const [report, setReport] = useState(null);
     const [comments, setComments] = useState([]);
@@ -41,7 +42,7 @@ export default function ReportPage() {
     if (loading) return <div className="page-loading">Loading report…</div>;
     if (error || !report) return <div className="page-error">{error || 'Report not found.'}</div>;
 
-    const isAdmin = user.role === 'admin';
+    const isAdmin = role === 'admin';
     const isCreator = report.createdBy.id === user.id;
     const isAssignee = report.assignees.some(a => a.user.id === user.id);
     const isReviewer = report.reviewers.some(r => r.user.id === user.id);
@@ -127,7 +128,7 @@ export default function ReportPage() {
 
     return (
         <div className="report-detail">
-            <Link to={`/projects/${projectId}`} className="back-link">← Project</Link>
+            <Link to={`/orgs/${orgId}/projects/${projectId}`} className="back-link">← Project</Link>
 
             <div className="report-detail-header">
                 <div className="report-detail-title-row">
@@ -224,6 +225,7 @@ export default function ReportPage() {
                                 key={comment.id}
                                 comment={comment}
                                 currentUser={user}
+                                isAdmin={isAdmin}
                                 canComment={canComment}
                                 replyingTo={replyingTo}
                                 setReplyingTo={setReplyingTo}
@@ -278,7 +280,7 @@ export default function ReportPage() {
                     orgId={orgId}
                     projectId={projectId}
                     onClose={() => setShowDelete(false)}
-                    onDeleted={() => navigate(`/projects/${projectId}`)}
+                    onDeleted={() => navigate(`/orgs/${orgId}/projects/${projectId}`)}
                 />
             )}
         </div>
@@ -324,13 +326,13 @@ function CommentComposer({ placeholder, onSubmit, onCancel, autoFocus }) {
     );
 }
 
-function CommentItem({ comment, currentUser, canComment, replyingTo, setReplyingTo, onReply, onEdit, onDelete }) {
+function CommentItem({ comment, currentUser, isAdmin, canComment, replyingTo, setReplyingTo, onReply, onEdit, onDelete }) {
     const [editing, setEditing] = useState(false);
     const [editBody, setEditBody] = useState(comment.body);
 
     const isDeleted = !!comment.deletedAt;
     const isAuthor = !isDeleted && comment.author?.id === currentUser.id;
-    const canDelete = !isDeleted && (isAuthor || currentUser.role === 'admin');
+    const canDelete = !isDeleted && (isAuthor || isAdmin);
     const isTopLevel = !comment.parentId;
 
     const submitEdit = async (e) => {
@@ -398,6 +400,7 @@ function CommentItem({ comment, currentUser, canComment, replyingTo, setReplying
                             key={reply.id}
                             comment={reply}
                             currentUser={currentUser}
+                            isAdmin={isAdmin}
                             canComment={canComment}
                             replyingTo={replyingTo}
                             setReplyingTo={setReplyingTo}

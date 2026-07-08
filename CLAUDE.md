@@ -200,7 +200,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | 3 | Projects                        | ✅ done      | Create project, assign members (Admin)                   |
 | 4 | Reports                         | ✅ done      | Full CRUD, assignees, reviewers                          |
 | 5 | Comments                        | ✅ done      | Threaded (1-level), edit, tombstone delete               |
-| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, and admin member management done. Org switching and leave-project/org actions remain |
+| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, admin member management, org switching, leave-org, and mobile nav done. Leave-project action remains |
 
 ### Frontend — Progress
 
@@ -208,17 +208,20 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 |-------|--------|-------|
 | Scaffold (Vite + React) | ✅ done | `frontend/` at project root |
 | Axios instance | ✅ done | `src/api/axios.js`, `withCredentials: true` |
-| Auth context | ✅ done | `src/context/AuthContext.jsx` — holds user, `login`, `logout`, `refreshUser` |
-| Routing skeleton | ✅ done | React Router v6, `<ProtectedRoute>`, nested routes via `<Outlet>` |
-| Register page | ✅ done | Form → `POST /auth/register` → auto-login → redirect |
-| Login page | ✅ done | Form → `POST /auth/login` → redirect |
-| App shell | ✅ done | `AppLayout` with sidebar (org name, nav links, user/logout) |
-| Onboarding | ✅ done | Create org + browse/join orgs + sign-out button for waiting users |
+| Auth context | ✅ done | `src/context/AuthContext.jsx` — holds user identity (id/name/email), `login`, `logout`, `refreshUser` |
+| Org context | ✅ done | `src/context/OrgContext.jsx` — `{ orgId, orgName, role }` for the org currently being viewed, provided by `OrgLayout` |
+| Routing skeleton | ✅ done | React Router v6, `<ProtectedRoute>`, org-scoped nested routes (`/orgs/:orgId/...`) via `<Outlet>` |
+| Register page | ✅ done | Form → `POST /auth/register` → auto-login → redirect to hub |
+| Login page | ✅ done | Form → `POST /auth/login` → redirect to hub |
+| Org hub page | ✅ done | `OrgHubPage` at `/` — post-login landing page: "your organizations" (pinned last-visited), create org, browse/join orgs, sign-out |
+| App shell | ✅ done | `OrgLayout` with sidebar (clickable org-name switcher, nav links, leave-org, user/logout); mobile off-canvas drawer with burger toggle below 768px |
 | Dashboard | ✅ done | Project grid; create-project modal (admin); request-to-join button (member) |
 | Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
-| Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/members` in sidebar |
-| Report detail page | ✅ done | `/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete), danger zone delete |
+| Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/orgs/:orgId/members` in sidebar |
+| Report detail page | ✅ done | `/orgs/:orgId/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete), danger zone delete |
 | Admin member management | ✅ done | Members section on project detail — chip list + remove (with confirmation modal) + add-member picker (admin only), read-only list for others |
+| Org switching | ✅ done | Org-scoped URLs, sidebar dropdown switcher, hub page always shown post-login (no auto-skip) |
+| Leave org | ✅ done | Sidebar confirm modal → `DELETE /orgs/:id/leave`; backend also strips the user's `ReportAssignee`/`ReportReviewer` rows for that org on leave (previously only `UserProject` was cleaned up) |
 
 ---
 
@@ -234,4 +237,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: July 2026 — backend complete, frontend through admin member management done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal). Org switching and leave-project/org actions remain*
+*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav). Leave-project action remains*

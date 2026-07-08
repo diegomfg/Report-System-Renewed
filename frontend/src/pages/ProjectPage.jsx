@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useOrg } from '../context/OrgContext';
 import PersonPicker from '../components/PersonPicker';
 
 export default function ProjectPage() {
     const { projectId } = useParams();
     const { user } = useAuth();
+    const { orgId, role } = useOrg();
     const navigate = useNavigate();
-    const orgId = user.organizationId;
 
     const [project, setProject] = useState(null);
     const [members, setMembers] = useState([]);
@@ -25,7 +26,7 @@ export default function ProjectPage() {
             const [projRes, reportsRes, requestsRes] = await Promise.all([
                 api.get(`/orgs/${orgId}/projects/${projectId}`),
                 api.get(`/orgs/${orgId}/projects/${projectId}/reports`),
-                user.role === 'admin'
+                role === 'admin'
                     ? api.get(`/orgs/${orgId}/projects/${projectId}/requests`)
                     : Promise.resolve({ data: { requests: [] } }),
             ]);
@@ -38,7 +39,7 @@ export default function ProjectPage() {
         } finally {
             setLoading(false);
         }
-    }, [orgId, projectId, user.role]);
+    }, [orgId, projectId, role]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -47,7 +48,7 @@ export default function ProjectPage() {
 
     const projectMemberCount = members.filter(m => m.projectStatus === 'in_project').length;
     const isProjectMember = members.some(m => m.id === user.id && m.projectStatus === 'in_project');
-    const canCreateReport = user.role === 'admin' || isProjectMember;
+    const canCreateReport = role === 'admin' || isProjectMember;
 
     const openCount = reports.filter(r => r.status === 'open').length;
     const inProgressCount = reports.filter(r => r.status === 'in_progress').length;
@@ -83,7 +84,7 @@ export default function ProjectPage() {
 
     return (
         <div className="project-detail">
-            <Link to="/" className="back-link">← Projects</Link>
+            <Link to={`/orgs/${orgId}`} className="back-link">← Projects</Link>
 
             <div className="project-detail-header">
                 <h1>{project.name}</h1>
@@ -110,7 +111,7 @@ export default function ProjectPage() {
                         {projectMembers.map(m => (
                             <li key={m.id} className="person-chip">
                                 <span>{m.name}</span>
-                                {user.role === 'admin' && (
+                                {role === 'admin' && (
                                     <button
                                         className="chip-remove"
                                         aria-label={`Remove ${m.name}`}
@@ -123,7 +124,7 @@ export default function ProjectPage() {
                         ))}
                     </ul>
                 )}
-                {user.role === 'admin' && addableMembers.length > 0 && (
+                {role === 'admin' && addableMembers.length > 0 && (
                     <PersonPicker
                         candidates={addableMembers}
                         placeholder="Add member…"
@@ -132,7 +133,7 @@ export default function ProjectPage() {
                 )}
             </div>
 
-            {user.role === 'admin' && (
+            {role === 'admin' && (
                 <div className="requests-section">
                     <div className="section-header">
                         <h2>
@@ -192,14 +193,14 @@ export default function ProjectPage() {
                             <ReportCard
                                 key={report.id}
                                 report={report}
-                                onClick={() => navigate(`/projects/${projectId}/reports/${report.id}`)}
+                                onClick={() => navigate(`/orgs/${orgId}/projects/${projectId}/reports/${report.id}`)}
                             />
                         ))}
                     </div>
                 )}
             </div>
 
-            {user.role === 'admin' && (
+            {role === 'admin' && (
                 <div className="danger-zone">
                     <div className="danger-zone-header">
                         <h2>Danger Zone</h2>
@@ -232,7 +233,7 @@ export default function ProjectPage() {
                     project={project}
                     orgId={orgId}
                     onClose={() => setShowDelete(false)}
-                    onDeleted={() => navigate('/')}
+                    onDeleted={() => navigate(`/orgs/${orgId}`)}
                 />
             )}
 

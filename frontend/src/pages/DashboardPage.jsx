@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
+import { useOrg } from '../context/OrgContext';
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { orgId, role } = useOrg();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -12,11 +12,11 @@ export default function DashboardPage() {
 
     const load = useCallback(() => {
         setLoading(true);
-        api.get(`/orgs/${user.organizationId}/projects`)
+        api.get(`/orgs/${orgId}/projects`)
             .then(res => setProjects(res.data.projects))
             .catch(() => setError('Could not load projects.'))
             .finally(() => setLoading(false));
-    }, [user.organizationId]);
+    }, [orgId]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -27,7 +27,7 @@ export default function DashboardPage() {
         <div className="dashboard">
             <div className="dashboard-header">
                 <h1>Projects</h1>
-                {user.role === 'admin' && projects.length > 0 && (
+                {role === 'admin' && projects.length > 0 && (
                     <button className="btn-create" onClick={() => setShowCreate(true)}>
                         New Project
                     </button>
@@ -37,7 +37,7 @@ export default function DashboardPage() {
             {projects.length === 0 ? (
                 <div className="empty-state">
                     <p className="empty-state-title">This organization has no projects yet.</p>
-                    {user.role === 'admin' && (
+                    {role === 'admin' && (
                         <button className="btn-create" onClick={() => setShowCreate(true)}>
                             Create new project
                         </button>
@@ -46,14 +46,14 @@ export default function DashboardPage() {
             ) : (
                 <div className="project-grid">
                     {projects.map(project => (
-                        <ProjectCard key={project.id} project={project} orgId={user.organizationId} />
+                        <ProjectCard key={project.id} project={project} orgId={orgId} role={role} />
                     ))}
                 </div>
             )}
 
             {showCreate && (
                 <CreateProjectModal
-                    orgId={user.organizationId}
+                    orgId={orgId}
                     onClose={() => setShowCreate(false)}
                     onCreated={() => { setShowCreate(false); load(); }}
                 />
@@ -62,8 +62,7 @@ export default function DashboardPage() {
     );
 }
 
-function ProjectCard({ project, orgId }) {
-    const { user } = useAuth();
+function ProjectCard({ project, orgId, role }) {
     const navigate = useNavigate();
     const [status, setStatus] = useState(project.yourStatus);
 
@@ -80,7 +79,7 @@ function ProjectCard({ project, orgId }) {
     };
 
     return (
-        <div className="project-card" onClick={() => navigate(`/projects/${project.id}`)}>
+        <div className="project-card" onClick={() => navigate(`/orgs/${orgId}/projects/${project.id}`)}>
             <div className="project-card-header">
                 <h2>{project.name}</h2>
                 {statusLabel && (
@@ -95,7 +94,7 @@ function ProjectCard({ project, orgId }) {
                 <span>{project._count.members} member{project._count.members !== 1 ? 's' : ''}</span>
                 <span>{project._count.reports} report{project._count.reports !== 1 ? 's' : ''}</span>
             </div>
-            {user.role === 'member' && status === null && (
+            {role === 'member' && status === null && (
                 <button className="btn-request-join" onClick={requestJoin}>
                     Request to join
                 </button>
