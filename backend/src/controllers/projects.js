@@ -47,7 +47,9 @@ exports.listProjects = async (req, res) => {
         const { orgId } = req.params;
         const userId = req.user.id;
 
-        const [projects, userProjectAccess, userPendingRequests] = await Promise.all([
+        const isAdmin = req.user.role === 'admin';
+
+        const [projects, userProjectAccess, userPendingRequests, adminPendingRequests] = await Promise.all([
             prisma.project.findMany({
                 where: { organizationId: orgId, deletedAt: null },
                 include: { _count: { select: { members: true, reports: true } } },
@@ -60,17 +62,28 @@ exports.listProjects = async (req, res) => {
             prisma.projectAccessRequest.findMany({
                 where: { userId, status: 'pending', project: { organizationId: orgId } },
                 select: { projectId: true }
-            })
+            }),
+            isAdmin
+                ? prisma.projectAccessRequest.findMany({
+                    where: { status: 'pending', project: { organizationId: orgId } },
+                    select: { projectId: true }
+                })
+                : Promise.resolve([])
         ]);
 
         const inProjectSet = new Set(userProjectAccess.map(p => p.projectId));
         const pendingSet = new Set(userPendingRequests.map(r => r.projectId));
+        const pendingCountMap = adminPendingRequests.reduce((acc, r) => {
+            acc[r.projectId] = (acc[r.projectId] || 0) + 1;
+            return acc;
+        }, {});
 
         const enriched = projects.map(p => ({
             ...p,
             yourStatus: inProjectSet.has(p.id) ? 'in_project'
                       : pendingSet.has(p.id)   ? 'pending'
-                      : null
+                      : null,
+            pendingRequestsCount: pendingCountMap[p.id] || 0
         }));
 
         return res.status(200).json({ projects: enriched });

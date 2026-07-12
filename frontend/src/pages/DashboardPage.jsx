@@ -80,6 +80,11 @@ function ProjectCard({ project, orgId, role }) {
 
     return (
         <div className="project-card" onClick={() => navigate(`/orgs/${orgId}/projects/${project.id}`)}>
+            {role === 'admin' && project.pendingRequestsCount > 0 && (
+                <div className="card-tags">
+                    <span className="card-tag card-tag-pending">{project.pendingRequestsCount} pending</span>
+                </div>
+            )}
             <div className="project-card-header">
                 <h2>{project.name}</h2>
                 {statusLabel && (

@@ -71,6 +71,14 @@ function Sidebar({ orgId, orgName, role, mobileOpen, onNavigate }) {
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const [orgs, setOrgs] = useState(null);
     const [showLeave, setShowLeave] = useState(false);
+    const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
+
+    useEffect(() => {
+        if (role !== 'admin') return;
+        api.get(`/orgs/${orgId}/requests`)
+            .then(res => setPendingOrgRequests(res.data.requests.length))
+            .catch(() => {});
+    }, [orgId, role]);
 
     const openSwitcher = useCallback(() => {
         setSwitcherOpen(prev => {
@@ -129,6 +137,9 @@ function Sidebar({ orgId, orgName, role, mobileOpen, onNavigate }) {
                     </NavLink>
                     <NavLink to={`/orgs/${orgId}/members`} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={onNavigate}>
                         Members
+                        {pendingOrgRequests > 0 && (
+                            <span className="nav-badge">{pendingOrgRequests}</span>
+                        )}
                     </NavLink>
                 </nav>
             </div>
