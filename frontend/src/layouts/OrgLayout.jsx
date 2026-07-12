@@ -72,12 +72,18 @@ function Sidebar({ orgId, orgName, role, mobileOpen, onNavigate }) {
     const [orgs, setOrgs] = useState(null);
     const [showLeave, setShowLeave] = useState(false);
     const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
+    const [pendingProjectRequests, setPendingProjectRequests] = useState(0);
 
     useEffect(() => {
         if (role !== 'admin') return;
-        api.get(`/orgs/${orgId}/requests`)
-            .then(res => setPendingOrgRequests(res.data.requests.length))
-            .catch(() => {});
+        Promise.all([
+            api.get(`/orgs/${orgId}/requests`),
+            api.get(`/orgs/${orgId}/projects`),
+        ]).then(([orgRes, projRes]) => {
+            setPendingOrgRequests(orgRes.data.requests.length);
+            const total = projRes.data.projects.reduce((sum, p) => sum + (p.pendingRequestsCount || 0), 0);
+            setPendingProjectRequests(total);
+        }).catch(() => {});
     }, [orgId, role]);
 
     const openSwitcher = useCallback(() => {
@@ -134,6 +140,9 @@ function Sidebar({ orgId, orgName, role, mobileOpen, onNavigate }) {
                 <nav className="sidebar-nav">
                     <NavLink to={`/orgs/${orgId}`} end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={onNavigate}>
                         Projects
+                        {pendingProjectRequests > 0 && (
+                            <span className="nav-badge">{pendingProjectRequests}</span>
+                        )}
                     </NavLink>
                     <NavLink to={`/orgs/${orgId}/members`} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={onNavigate}>
                         Members
