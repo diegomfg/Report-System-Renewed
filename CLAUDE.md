@@ -200,7 +200,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | 3 | Projects                        | ✅ done      | Create project, assign members (Admin)                   |
 | 4 | Reports                         | ✅ done      | Full CRUD, assignees, reviewers                          |
 | 5 | Comments                        | ✅ done      | Threaded (1-level), edit, tombstone delete               |
-| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, admin member management, org switching, leave-org, and mobile nav done. Leave-project action remains |
+| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, admin member management, org switching, leave-org, mobile nav, and join-request notification badges done. Leave-project action remains |
 
 ### Frontend — Progress
 
@@ -222,6 +222,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | Admin member management | ✅ done | Members section on project detail — chip list + remove (with confirmation modal) + add-member picker (admin only), read-only list for others |
 | Org switching | ✅ done | Org-scoped URLs, sidebar dropdown switcher, hub page always shown post-login (no auto-skip) |
 | Leave org | ✅ done | Sidebar confirm modal → `DELETE /orgs/:id/leave`; backend also strips the user's `ReportAssignee`/`ReportReviewer` rows for that org on leave (previously only `UserProject` was cleaned up) |
+| Join-request notification badges | ✅ done | Admin-only sidebar badges (Projects/Members nav) for pending org + project join requests, plus a "N pending" tag on the dashboard project card. Live-refreshes via `OrgContext.refreshBadges()` after approve/deny — no page reload needed. Fixed a regression where the count logic read a nonexistent `req.user.role` instead of `req.membership.role`, silently zeroing the count for every admin |
 
 ---
 
@@ -237,4 +238,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav). Leave-project action remains*
+*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav, live-refreshing join-request notification badges). Leave-project action remains*

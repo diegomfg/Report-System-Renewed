@@ -3,7 +3,7 @@ import api from '../api/axios';
 import { useOrg } from '../context/OrgContext';
 
 export default function MembersPage() {
-    const { orgId, role } = useOrg();
+    const { orgId, role, refreshBadges } = useOrg();
 
     const [members, setMembers] = useState([]);
     const [requests, setRequests] = useState([]);
@@ -33,6 +33,7 @@ export default function MembersPage() {
         try {
             await api.patch(`/orgs/${orgId}/requests/${requestId}`, { action });
             load();
+            refreshBadges();
         } catch (err) {
             alert(err.response?.data?.error || 'Action failed.');
         }

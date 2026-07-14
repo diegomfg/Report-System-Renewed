@@ -47,7 +47,7 @@ exports.listProjects = async (req, res) => {
         const { orgId } = req.params;
         const userId = req.user.id;
 
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.membership.role === 'admin';
 
         const [projects, userProjectAccess, userPendingRequests, adminPendingRequests] = await Promise.all([
             prisma.project.findMany({

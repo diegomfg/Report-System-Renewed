@@ -8,7 +8,7 @@ import PersonPicker from '../components/PersonPicker';
 export default function ProjectPage() {
     const { projectId } = useParams();
     const { user } = useAuth();
-    const { orgId, role } = useOrg();
+    const { orgId, role, refreshBadges } = useOrg();
     const navigate = useNavigate();
 
     const [project, setProject] = useState(null);
@@ -64,6 +64,7 @@ export default function ProjectPage() {
         try {
             await api.patch(`/orgs/${orgId}/projects/${projectId}/requests/${requestId}`, { action });
             load();
+            refreshBadges();
         } catch (err) {
             alert(err.response?.data?.error || 'Action failed.');
         }

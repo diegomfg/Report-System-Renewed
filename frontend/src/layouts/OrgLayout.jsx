@@ -10,6 +10,8 @@ export default function OrgLayout() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
+    const [pendingProjectRequests, setPendingProjectRequests] = useState(0);
 
     useEffect(() => {
         setLoading(true);
@@ -25,6 +27,20 @@ export default function OrgLayout() {
 
     useEffect(() => { setMobileNavOpen(false); }, [orgId]);
 
+    const refreshBadges = useCallback(() => {
+        if (!org || org.role !== 'admin') return Promise.resolve();
+        return Promise.all([
+            api.get(`/orgs/${org.id}/requests`),
+            api.get(`/orgs/${org.id}/projects`),
+        ]).then(([orgRes, projRes]) => {
+            setPendingOrgRequests(orgRes.data.requests.length);
+            const total = projRes.data.projects.reduce((sum, p) => sum + (p.pendingRequestsCount || 0), 0);
+            setPendingProjectRequests(total);
+        }).catch(() => {});
+    }, [org]);
+
+    useEffect(() => { refreshBadges(); }, [refreshBadges]);
+
     if (loading) return <div className="page-loading">Loading organization…</div>;
     if (error || !org) {
         return (
@@ -36,7 +52,7 @@ export default function OrgLayout() {
     }
 
     return (
-        <OrgProvider orgId={org.id} orgName={org.name} role={org.role}>
+        <OrgProvider orgId={org.id} orgName={org.name} role={org.role} refreshBadges={refreshBadges}>
             <div className="app-shell">
                 {!mobileNavOpen && (
                     <button
@@ -54,6 +70,8 @@ export default function OrgLayout() {
                     orgId={org.id}
                     orgName={org.name}
                     role={org.role}
+                    pendingOrgRequests={pendingOrgRequests}
+                    pendingProjectRequests={pendingProjectRequests}
                     mobileOpen={mobileNavOpen}
                     onNavigate={() => setMobileNavOpen(false)}
                 />
@@ -65,26 +83,12 @@ export default function OrgLayout() {
     );
 }
 
-function Sidebar({ orgId, orgName, role, mobileOpen, onNavigate }) {
+function Sidebar({ orgId, orgName, role, pendingOrgRequests, pendingProjectRequests, mobileOpen, onNavigate }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [switcherOpen, setSwitcherOpen] = useState(false);
     const [orgs, setOrgs] = useState(null);
     const [showLeave, setShowLeave] = useState(false);
-    const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
-    const [pendingProjectRequests, setPendingProjectRequests] = useState(0);
-
-    useEffect(() => {
-        if (role !== 'admin') return;
-        Promise.all([
-            api.get(`/orgs/${orgId}/requests`),
-            api.get(`/orgs/${orgId}/projects`),
-        ]).then(([orgRes, projRes]) => {
-            setPendingOrgRequests(orgRes.data.requests.length);
-            const total = projRes.data.projects.reduce((sum, p) => sum + (p.pendingRequestsCount || 0), 0);
-            setPendingProjectRequests(total);
-        }).catch(() => {});
-    }, [orgId, role]);
 
     const openSwitcher = useCallback(() => {
         setSwitcherOpen(prev => {

@@ -81,6 +81,8 @@ Two paths:
 
 The project list (`GET /api/orgs/:orgId/projects`) includes a `yourStatus` field per project — `"in_project"`, `"pending"`, or `null` — so the frontend can render access badges without a separate request. The project detail endpoint (`GET /api/orgs/:orgId/projects/:projectId`) returns all org members enriched with a `projectStatus` field using the same values.
 
+For admins, that same list response also carries `pendingRequestsCount` per project — the number of pending `ProjectAccessRequest` rows for it — which powers the dashboard card tag and the sidebar badge (see **Sidebar badges** under Frontend, below).
+
 \---
 
 ## Reports
@@ -248,6 +250,16 @@ Below the nav links, "Leave organization" opens a confirm modal (simple Cancel/L
 
 **What leaving does server-side (`leaveOrg` in `orgs.js`):** in one transaction — deletes the user's `UserProject` rows for that org's projects, deletes their `ReportAssignee`/`ReportReviewer` rows for that org's reports, then deletes the `OrganizationMember` row. `Report.createdById` is left untouched (historical provenance, same as GitHub keeping "opened by" after someone leaves). Blocked if the user is the org's only admin.
 
+### Sidebar badges (join-request notifications)
+
+The sidebar shows two admin-only badge counts, next to the "Projects" and "Members" nav links: pending project-access requests (summed across every project in the org) and pending org join requests.
+
+**Fetch:** `OrgLayout` — not `Sidebar` — owns this state, fetching it once via `GET /orgs/:orgId/requests` and `GET /orgs/:orgId/projects` (reusing the `pendingRequestsCount` field described above). Gated client-side by `role !== 'admin'`; the fetch never fires for members.
+
+**Gotcha (backend):** `pendingRequestsCount` in `listProjects` must check `req.membership.role === 'admin'`, not `req.user.role` — the JWT payload only ever contains `{ id, email }` (see Authentication above), so `req.user.role` is always `undefined`. This regressed silently after role moved from `User` to `OrganizationMember`: `isAdmin` was always `false`, so the count was always `0` for every admin, with no error anywhere in the request path. Fixed by reading `req.membership.role` instead, which the `authorize` middleware already attaches.
+
+**Live refresh:** `Sidebar` lives in the `OrgLayout` shell and does not remount when navigating between `Dashboard` / `ProjectPage` / `MembersPage` — they're all `<Outlet>` children of the same layout. Without an explicit trigger, its badge counts would go stale the moment an admin resolved a request without a full page reload. `OrgLayout` exposes its fetch function as `refreshBadges()` through `OrgContext`; `MembersPage` and `ProjectPage` call it after every successful approve/deny (`PATCH .../requests/:requestId`), alongside their own `load()`. `refreshBadges()` is a no-op for non-admins.
+
 ### Mobile nav
 
 Below 768px, `.sidebar` becomes a fixed off-canvas drawer (`transform: translateX(-100%)` by default) triggered by a ☰ button fixed top-left. The toggle button only renders while the drawer is closed — this avoids it visually overlapping the drawer's own header once open, and closing already has three other paths (backdrop tap, any nav-link click, switching org). A dim backdrop (`.sidebar-backdrop`) sits between the content and the drawer and closes it on tap.
@@ -338,5 +350,5 @@ HTTP Request
 
 \---
 
-*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, and mobile nav done. Leave-project action remains.*
+*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, mobile nav, and live-refreshing join-request notification badges done. Leave-project action remains.*
 
