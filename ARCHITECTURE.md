@@ -291,10 +291,12 @@ Permissions are mirrored client-side from the backend rules:
 
 - **Header** — title, Edit button (project members), severity/status badges, description, creator + created date.
 - **Assignees / Reviewers** — chip lists with a remove (×) control per chip, plus the shared `PersonPicker` component below (`<select>` + "Add" button), both admin/creator only.
-- **Comments** — top-level list with one level of nested replies (matches the backend's 1-level-deep rule); tombstoned comments render `"[deleted]"` with no author but keep their replies visible. Reply is only offered on top-level, non-deleted comments; Edit only for the comment's own author; Delete for author or admin.
+- **Comments** — top-level list with one level of nested replies (matches the backend's 1-level-deep rule); tombstoned comments render `"[deleted]"` with no author but keep their replies visible. Reply is only offered on top-level, non-deleted comments; Edit only for the comment's own author; Delete for author or admin. Each comment (including replies) renders as its own bordered, tinted box — `background: var(--accent-bg)` with a `1px solid var(--border)` outline and `10px` radius (`.comment-item`, `index.css`) — so a thread reads as distinct blocks rather than an undifferentiated wall of text against the page background. The header (author/timestamp), body, and inline edit form are all inside the same box; tombstoned comments keep the same box treatment with italicized `"[deleted]"` body text.
 - **Danger Zone** (admin/creator) — delete report via a simple confirm modal (no name-typing, unlike project deletion — a report is a smaller blast radius than a whole project).
 
 All mutations (assignee/reviewer add-remove, comment post/edit/delete, report edit/delete) trigger a full reload rather than optimistic local state updates, consistent with the rest of the app's pattern (`ProjectPage`, `MembersPage`).
+
+**Known gap:** `postComment`/`editComment`/`deleteComment` each independently call `load()` with no in-flight guard or request sequencing. Firing two of these in quick succession (e.g. deleting two different comments back-to-back) can theoretically let an older, slower `load()` response resolve after a newer one and transiently overwrite fresher state — observed once as a comment showing the tombstoned style (italic, "Deleted" author) but with its original body text still attached, until the next full reload. Self-corrects on any subsequent fetch (nothing is wrong server-side — `sanitize()` is deterministic per request); not yet fixed. Likely fix: a per-comment loading flag that disables the triggering action's button while its own request is in flight, or a request-sequencing guard on `load()`.
 
 ### Members page (`/members`)
 
@@ -350,5 +352,5 @@ HTTP Request
 
 \---
 
-*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, mobile nav, and live-refreshing join-request notification badges done. Leave-project action remains.*
+*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, mobile nav, live-refreshing join-request notification badges, and comment box styling done. Leave-project action remains.*
 

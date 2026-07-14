@@ -218,7 +218,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | Dashboard | ✅ done | Project grid; create-project modal (admin); request-to-join button (member) |
 | Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
 | Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/orgs/:orgId/members` in sidebar |
-| Report detail page | ✅ done | `/orgs/:orgId/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete), danger zone delete |
+| Report detail page | ✅ done | `/orgs/:orgId/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete) each rendered as its own tinted/bordered box for readability, danger zone delete |
 | Admin member management | ✅ done | Members section on project detail — chip list + remove (with confirmation modal) + add-member picker (admin only), read-only list for others |
 | Org switching | ✅ done | Org-scoped URLs, sidebar dropdown switcher, hub page always shown post-login (no auto-skip) |
 | Leave org | ✅ done | Sidebar confirm modal → `DELETE /orgs/:id/leave`; backend also strips the user's `ReportAssignee`/`ReportReviewer` rows for that org on leave (previously only `UserProject` was cleaned up) |
@@ -238,4 +238,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav, live-refreshing join-request notification badges). Leave-project action remains*
+*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav, live-refreshing join-request notification badges, tinted/bordered comment boxes). Leave-project action remains*
