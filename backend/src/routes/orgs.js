@@ -11,7 +11,9 @@ const {
     requestJoinOrg,
     getJoinRequests,
     resolveJoinRequest,
-    leaveOrg
+    leaveOrg,
+    removeOrgMember,
+    getOrgActivity
 } = require('../controllers/orgs');
 
 // GET /api/orgs/browse - List all orgs (authenticated, for discovery)
@@ -37,5 +39,11 @@ router.patch('/:id/requests/:requestId', authenticate, authorize(['admin']), res
 
 // DELETE /api/orgs/:id/leave - Leave an org
 router.delete('/:id/leave', authenticate, leaveOrg);
+
+// DELETE /api/orgs/:id/members/:userId - Admin: remove a member from the org
+router.delete('/:id/members/:userId', authenticate, authorize(['admin']), removeOrgMember);
+
+// GET /api/orgs/:id/activity - Admin: view membership event log
+router.get('/:id/activity', authenticate, authorize(['admin']), getOrgActivity);
 
 module.exports = router;

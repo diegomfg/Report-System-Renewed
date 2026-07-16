@@ -1181,6 +1181,45 @@ a:hover {
   color: var(--text);
 }
 
+.member-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-item-actions .chip-remove {
+  font-size: 22px;
+}
+
+/* ── Activity log (org members page) ─────────────────────── */
+
+.activity-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-item {
+  background: var(--accent-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
 /* ── Report detail page ──────────────────────────────────── */
 
 .report-detail {

@@ -66,9 +66,22 @@ Because a user's role can change (member promoted to admin, or removed from an o
 Users do not self-add to orgs. There are two paths:
 
 1. **Create org** — `POST /api/orgs` — creates the org and immediately creates an `OrganizationMember` record with `role: admin` in a single transaction. The creator is always the first admin.
-2. **Request to join** — `POST /api/orgs/:id/request` — creates an `OrgJoinRequest` record with `status: pending`. The org admin reviews it via `GET /api/orgs/:id/requests` and approves or rejects via `PATCH /api/orgs/:id/requests/:requestId`. Approval creates the `OrganizationMember` record in a transaction alongside updating the request status.
+2. **Request to join** — `POST /api/orgs/:id/request` — creates an `OrgJoinRequest` record with `status: pending`. The org admin reviews it via `GET /api/orgs/:id/requests` and approves or rejects via `PATCH /api/orgs/:id/requests/:requestId`. Approval creates the `OrganizationMember` record in a transaction alongside updating the request status, and writes a `joined` row to `OrgMembershipLog` (see **Membership audit log** below) with the approving admin as actor.
 
 Email-based invitations are planned but not yet built.
+
+### Leaving / being removed from an organization
+
+Two paths end a membership, both funneling through a shared `removeMembership(tx, { userId, organizationId })` helper in `orgs.js` — deletes the user's `UserProject` rows for that org's projects, their `ReportAssignee`/`ReportReviewer` rows for that org's reports, then the `OrganizationMember` row itself. `Report.createdById` is left untouched (historical provenance, same as GitHub keeping "opened by" after someone leaves). Each caller wraps the helper in its own transaction and appends its own `OrgMembershipLog` write, since the log action and actor differ by call site.
+
+1. **Self-leave** — `DELETE /api/orgs/:id/leave` — any authenticated member, on their own membership. Blocked with a 400 if the leaving user is the org's only admin. Writes a `left` entry with `actorId` set to the leaving user themself.
+2. **Admin removes a member** — `DELETE /api/orgs/:id/members/:userId` — `authorize(['admin'])`. Blocked with a 400 if the admin targets themself (use self-leave instead) or if the target is the org's only admin. Writes a `removed` entry with `actorId` set to the acting admin.
+
+### Membership audit log
+
+`OrgMembershipLog` (`organizationId`, `userId` — the member the event is about, `actorId` — nullable, who did it, `action` — `joined | left | removed`, `createdAt`) records every membership state change. There is no edit or delete on this table; it's an append-only trail so an admin can answer "did this person leave, or did I remove them?" without relying on memory.
+
+`GET /api/orgs/:id/activity` (`authorize(['admin'])`) returns the full log for an org, newest first, with `user` and `actor` joined in as `{ id, name, email }`.
 
 ### Getting access to a project
 
@@ -248,7 +261,7 @@ The org name in the sidebar is a button, not static text. Clicking it opens a dr
 
 Below the nav links, "Leave organization" opens a confirm modal (simple Cancel/Leave, no name-typing — leaving is reversible via re-request) that calls `DELETE /orgs/:id/leave`. On success it clears `lastOrgId` from localStorage if it pointed at the org just left, then routes to `/`. The backend's sole-admin block ("Cannot leave: you are the only admin…") surfaces directly in the modal.
 
-**What leaving does server-side (`leaveOrg` in `orgs.js`):** in one transaction — deletes the user's `UserProject` rows for that org's projects, deletes their `ReportAssignee`/`ReportReviewer` rows for that org's reports, then deletes the `OrganizationMember` row. `Report.createdById` is left untouched (historical provenance, same as GitHub keeping "opened by" after someone leaves). Blocked if the user is the org's only admin.
+**What leaving does server-side (`leaveOrg` in `orgs.js`):** see **Leaving / being removed from an organization** above — shared cleanup helper plus a `left` write to `OrgMembershipLog`. Blocked if the user is the org's only admin.
 
 ### Sidebar badges (join-request notifications)
 
@@ -303,7 +316,8 @@ All mutations (assignee/reviewer add-remove, comment post/edit/delete, report ed
 Accessible from the sidebar by all users. Calls `GET /orgs/:orgId` for the member list and `GET /orgs/:orgId/requests` (admin only) for pending org join requests.
 
 - **Join Requests** (admin only) — pending org-level join requests with Approve / Deny buttons calling `PATCH /orgs/:orgId/requests/:requestId`. Badge on the heading shows count when requests are present.
-- **Members** — all current org members with name, email, and role badge.
+- **Members** — all current org members with name, email, and role badge. Admin-only: a remove (×) control per row (hidden on the admin's own row — self-removal goes through the sidebar's leave-org flow instead), opening a Cancel/Remove confirmation modal that calls `DELETE /orgs/:orgId/members/:userId`.
+- **Activity** (admin only) — collapsed by default; a "Show" link lazily fetches `GET /orgs/:orgId/activity` on first expand and renders each `OrgMembershipLog` entry as a one-line, tinted box (`joined`/`left`/`removed`, with actor and timestamp where relevant), newest first. Cleared and re-fetched after any remove action so it never shows stale state.
 
 ### Onboarding sign-out
 
@@ -346,11 +360,13 @@ HTTP Request
 | Frontend — org switching (org hub page, sidebar switcher, org-scoped routing) | ✅ Done |
 | Frontend — leave org action (sidebar, with confirm modal) | ✅ Done |
 | Frontend — mobile nav (off-canvas drawer + burger toggle) | ✅ Done |
+| Backend — org membership audit log (`OrgMembershipLog`) | ✅ Done |
+| Frontend — admin remove member from org + Activity log section (Members page) | ✅ Done |
 | Frontend — leave project action | Not yet built (backend `leaveProject` exists, unused) |
 | Email invitations | Deferred |
 | Superuser | Deferred |
 
 \---
 
-*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, mobile nav, live-refreshing join-request notification badges, and comment box styling done. Leave-project action remains.*
+*Last updated: July 2026 — backend complete; frontend through org switching, leave-org, mobile nav, live-refreshing join-request notification badges, comment box styling, admin member removal, and the org membership activity log done. Leave-project action remains.*
 

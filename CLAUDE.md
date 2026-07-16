@@ -200,7 +200,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | 3 | Projects                        | ✅ done      | Create project, assign members (Admin)                   |
 | 4 | Reports                         | ✅ done      | Full CRUD, assignees, reviewers                          |
 | 5 | Comments                        | ✅ done      | Threaded (1-level), edit, tombstone delete               |
-| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, admin member management, org switching, leave-org, mobile nav, and join-request notification badges done. Leave-project action remains |
+| 6 | React Frontend                  | 🔄 in progress | Foundation, auth pages, shell, dashboard, project detail, members page, report detail, admin member management, org switching, leave-org, mobile nav, join-request notification badges, admin remove-member-from-org, and org membership activity log done. Leave-project action remains |
 
 ### Frontend — Progress
 
@@ -217,7 +217,7 @@ This prevents accidental data loss (e.g. Admin deleting an Org) without needing 
 | App shell | ✅ done | `OrgLayout` with sidebar (clickable org-name switcher, nav links, leave-org, user/logout); mobile off-canvas drawer with burger toggle below 768px |
 | Dashboard | ✅ done | Project grid; create-project modal (admin); request-to-join button (member) |
 | Project detail page | ✅ done | Header meta, reports grid, create-report modal, join requests (admin), danger zone delete (admin) |
-| Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/orgs/:orgId/members` in sidebar |
+| Members page | ✅ done | Org member list + org join request approve/deny (admin) — `/orgs/:orgId/members` in sidebar. Admin-only remove-member (×) per row with confirm modal (`DELETE /orgs/:orgId/members/:userId`), hidden on the admin's own row. Admin-only collapsible "Activity" section (`GET /orgs/:orgId/activity`) showing the org's membership audit log — `joined` (with approving admin), `left`, `removed` (with acting admin) — backed by a new `OrgMembershipLog` table |
 | Report detail page | ✅ done | `/orgs/:orgId/projects/:projectId/reports/:reportId` — edit modal (title/description/severity/status), assignee/reviewer chip lists + pickers, threaded comments (reply/edit/tombstone-delete) each rendered as its own tinted/bordered box for readability, danger zone delete |
 | Admin member management | ✅ done | Members section on project detail — chip list + remove (with confirmation modal) + add-member picker (admin only), read-only list for others |
 | Org switching | ✅ done | Org-scoped URLs, sidebar dropdown switcher, hub page always shown post-login (no auto-skip) |
@@ -238,4 +238,4 @@ After each feature is complete, update `ARCHITECTURE.md` to reflect any new patt
 
 ---
 
-*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav, live-refreshing join-request notification badges, tinted/bordered comment boxes). Leave-project action remains*
+*Last updated: July 2026 — backend complete, frontend through org switching and leave-org done (report detail, comments, assignees, reviewers, edit/delete, assigned-to-me/reviewing badges, project member add/remove with confirmation modal, org-scoped routing with hub page and sidebar switcher, leave-org with assignee/reviewer cleanup, mobile off-canvas nav, live-refreshing join-request notification badges, tinted/bordered comment boxes, admin remove-member-from-org, and an org membership activity log (join/leave/removed events, append-only `OrgMembershipLog`) surfaced on the Members page). Leave-project action remains*

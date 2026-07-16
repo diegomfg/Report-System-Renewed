@@ -1,6 +1,37 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// Shared cleanup for a member leaving/being removed from an org: strips their
+// project assignments and report assignee/reviewer rows within that org, then
+// deletes the membership itself. Caller is responsible for the log write,
+// since the action ('left' vs 'removed') and actor differ by call site.
+async function removeMembership(tx, { userId, organizationId }) {
+    const projects = await tx.project.findMany({
+        where: { organizationId, deletedAt: null },
+        select: { id: true }
+    });
+
+    const projectIds = projects.map(p => p.id);
+
+    if (projectIds.length > 0) {
+        await tx.userProject.deleteMany({
+            where: { userId, projectId: { in: projectIds } }
+        });
+    }
+
+    await tx.reportAssignee.deleteMany({
+        where: { userId, report: { organizationId } }
+    });
+
+    await tx.reportReviewer.deleteMany({
+        where: { userId, report: { organizationId } }
+    });
+
+    await tx.organizationMember.delete({
+        where: { userId_organizationId: { userId, organizationId } }
+    });
+}
+
 // POST /api/orgs
 // Creates org and adds creator as admin
 exports.createOrg = async (req, res) => {
@@ -244,6 +275,15 @@ exports.resolveJoinRequest = async (req, res) => {
                 await tx.organizationMember.create({
                     data: { userId: joinRequest.userId, organizationId: id, role: 'member' }
                 });
+
+                await tx.orgMembershipLog.create({
+                    data: {
+                        organizationId: id,
+                        userId: joinRequest.userId,
+                        actorId: req.user.id,
+                        action: 'joined'
+                    }
+                });
             });
 
             return res.status(200).json({ message: 'Request approved, user added to organization' });
@@ -288,29 +328,15 @@ exports.leaveOrg = async (req, res) => {
         }
 
         await prisma.$transaction(async (tx) => {
-            const projects = await tx.project.findMany({
-                where: { organizationId: id, deletedAt: null },
-                select: { id: true }
-            });
+            await removeMembership(tx, { userId, organizationId: id });
 
-            const projectIds = projects.map(p => p.id);
-
-            if (projectIds.length > 0) {
-                await tx.userProject.deleteMany({
-                    where: { userId, projectId: { in: projectIds } }
-                });
-            }
-
-            await tx.reportAssignee.deleteMany({
-                where: { userId, report: { organizationId: id } }
-            });
-
-            await tx.reportReviewer.deleteMany({
-                where: { userId, report: { organizationId: id } }
-            });
-
-            await tx.organizationMember.delete({
-                where: { userId_organizationId: { userId, organizationId: id } }
+            await tx.orgMembershipLog.create({
+                data: {
+                    organizationId: id,
+                    userId,
+                    actorId: userId,
+                    action: 'left'
+                }
             });
         });
 
@@ -319,5 +345,78 @@ exports.leaveOrg = async (req, res) => {
     } catch (error) {
         console.error('Leave org error:', error);
         return res.status(500).json({ error: 'Failed to leave organization' });
+    }
+};
+
+// DELETE /api/orgs/:id/members/:userId
+// Admin: remove another member from the organization
+exports.removeOrgMember = async (req, res) => {
+    try {
+        const { id, userId } = req.params;
+        const adminId = req.user.id;
+
+        if (userId === adminId) {
+            return res.status(400).json({ error: 'Use the leave organization option to remove yourself' });
+        }
+
+        const membership = await prisma.organizationMember.findUnique({
+            where: { userId_organizationId: { userId, organizationId: id } }
+        });
+
+        if (!membership) {
+            return res.status(404).json({ error: 'That user is not a member of this organization' });
+        }
+
+        const adminCount = await prisma.organizationMember.count({
+            where: { organizationId: id, role: 'admin' }
+        });
+
+        if (membership.role === 'admin' && adminCount === 1) {
+            return res.status(400).json({
+                error: 'Cannot remove: they are the only admin. Promote another member first or delete the organization.'
+            });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await removeMembership(tx, { userId, organizationId: id });
+
+            await tx.orgMembershipLog.create({
+                data: {
+                    organizationId: id,
+                    userId,
+                    actorId: adminId,
+                    action: 'removed'
+                }
+            });
+        });
+
+        return res.status(200).json({ message: 'Member removed from organization' });
+
+    } catch (error) {
+        console.error('Remove org member error:', error);
+        return res.status(500).json({ error: 'Failed to remove member' });
+    }
+};
+
+// GET /api/orgs/:id/activity
+// Admin: view the organization's membership event log (joins, leaves, removals)
+exports.getOrgActivity = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const log = await prisma.orgMembershipLog.findMany({
+            where: { organizationId: id },
+            include: {
+                user: { select: { id: true, name: true, email: true } },
+                actor: { select: { id: true, name: true, email: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return res.status(200).json({ log });
+
+    } catch (error) {
+        console.error('Get org activity error:', error);
+        return res.status(500).json({ error: 'Failed to fetch organization activity' });
     }
 };

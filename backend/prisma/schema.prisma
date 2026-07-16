@@ -31,6 +31,12 @@ enum Status {
   resolved
 }
 
+enum MembershipAction {
+  joined
+  left
+  removed
+}
+
 model Organization {
   id          String    @id @default(cuid())
   name        String
@@ -39,10 +45,11 @@ model Organization {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  members      OrganizationMember[]
-  joinRequests OrgJoinRequest[]
-  projects     Project[]
-  reports      Report[]
+  members        OrganizationMember[]
+  joinRequests   OrgJoinRequest[]
+  projects       Project[]
+  reports        Report[]
+  membershipLogs OrgMembershipLog[]
 }
 
 model Project {
@@ -77,6 +84,8 @@ model User {
   assignedReports         ReportAssignee[]
   reviewingReports        ReportReviewer[]
   comments                Comment[]
+  membershipLogEvents     OrgMembershipLog[] @relation("MembershipLogUser")
+  membershipLogActions    OrgMembershipLog[] @relation("MembershipLogActor")
 }
 
 model OrganizationMember {
@@ -89,6 +98,19 @@ model OrganizationMember {
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@id([userId, organizationId])
+}
+
+model OrgMembershipLog {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  actorId        String?
+  action         MembershipAction
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation("MembershipLogUser", fields: [userId], references: [id])
+  actor        User?        @relation("MembershipLogActor", fields: [actorId], references: [id])
 }
 
 model UserProject {
